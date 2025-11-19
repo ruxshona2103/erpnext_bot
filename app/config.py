@@ -23,10 +23,18 @@ class ServerConfig(BaseModel):
     port: int = Field(8000, alias="PORT")
 
 
+class RedisConfig(BaseModel):
+    """Redis configuration for persistent FSM storage."""
+    host: str = Field("localhost", alias="REDIS_HOST")
+    port: int = Field(6379, alias="REDIS_PORT")
+    db: int = Field(0, alias="REDIS_DB")
+
+
 class Settings(BaseModel):
     telegram: TelegramConfig
     erp: ERPNextConfig
     server: ServerConfig
+    redis: RedisConfig
 
 
 def load_config() -> Settings:
@@ -51,7 +59,13 @@ def load_config() -> Settings:
             PORT=int(os.getenv("PORT", 8000)),
         )
 
-        return Settings(telegram=telegram, erp=erp, server=server)
+        redis = RedisConfig(
+            REDIS_HOST=os.getenv("REDIS_HOST", "localhost"),
+            REDIS_PORT=int(os.getenv("REDIS_PORT", 6379)),
+            REDIS_DB=int(os.getenv("REDIS_DB", 0)),
+        )
+
+        return Settings(telegram=telegram, erp=erp, server=server, redis=redis)
 
     except ValidationError as e:
         print("❌ Config validation error:", e)
