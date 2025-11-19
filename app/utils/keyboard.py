@@ -26,57 +26,76 @@ def main_menu_keyboard():
 #CONTRACT LIST (Inline Keyboard)
 def contract_list_keyboard(contracts: list):
     """
-    Contract ro‘yxati — foydalanuvchi birini tanlaydi.
-    contracts = [
-        {"id": "SO-0001"},
-        {"id": "SO-0002"},
-        ...
-    ]
+    Contract ro'yxati — foydalanuvchi birini tanlaydi.
+
+    Args:
+        contracts: List of contracts from ERPNext API
+            [{"contract_id": "SAL-ORD-00001"}, ...]
+
+    Returns:
+        InlineKeyboardMarkup with contract buttons
+
+    Aiogram 3.x syntax - inline_keyboard parameter ishlatilgan
     """
-    kb = InlineKeyboardMarkup()
+    buttons = []
 
+    # Har bir shartnoma uchun button
     for c in contracts:
-        cid = c.get("id")
-        kb.add(
-            InlineKeyboardButton(
-                text=f"📄 Shartnoma {cid}",
-                callback_data=f"contract:{cid}"
-            )
-        )
+        # ERPNext API dan contract_id keladi
+        cid = c.get("contract_id") or c.get("id") or c.get("name")
+        if cid:
+            buttons.append([
+                InlineKeyboardButton(
+                    text=f"📄 {cid}",
+                    callback_data=f"contract:{cid}"
+                )
+            ])
 
-    kb.add(InlineKeyboardButton(text="⬅️ Orqaga", callback_data="back:menu"))
-    return kb
+    # Orqaga tugma
+    buttons.append([
+        InlineKeyboardButton(text="⬅️ Orqaga", callback_data="back:menu")
+    ])
+
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
 #CONTRACT DETAIL (Inline Keyboard)
 def contract_detail_keyboard(contract_id: str):
     """
-    Shartnoma ichki menyusi:
-    - To‘lov jadvali
-    - To‘lovlar tarixi
-    - Orqaga
-    """
-    kb = InlineKeyboardMarkup()
-    kb.add(
-        InlineKeyboardButton(
-            text="📅 To‘lov jadvali",
-            callback_data=f"schedule:{contract_id}"
-        )
-    )
-    kb.add(
-        InlineKeyboardButton(
-            text="💳 To‘lovlar tarixi",
-            callback_data=f"payments:{contract_id}"
-        )
-    )
-    kb.add(
-        InlineKeyboardButton(
-            text="⬅️ Orqaga",
-            callback_data="back:contracts"
-        )
-    )
+    Shartnoma batafsil ko'rsatilgandan keyin action tugmalar.
 
-    return kb
+    Tugmalar:
+    ---------
+    - To'lov jadvali
+    - To'lovlar tarixi
+    - Orqaga (shartnomalar ro'yxatiga)
+
+    Args:
+        contract_id: Shartnoma ID (SAL-ORD-00001)
+
+    Returns:
+        InlineKeyboardMarkup
+    """
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text="📅 To'lov jadvali",
+                callback_data=f"schedule:{contract_id}"
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                text="💳 To'lovlar tarixi",
+                callback_data=f"payments:{contract_id}"
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                text="⬅️ Orqaga",
+                callback_data="back:contracts"
+            )
+        ]
+    ])
 
 
 
