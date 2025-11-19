@@ -1,54 +1,141 @@
-# app/loader.py
+"""
+Bot Loader - Initialization module
+
+Bu modul bot'ning asosiy komponentlarini yaratadi:
+- Bot instance
+- Dispatcher with RedisStorage
+- Event handlers
+
+Nima uchun RedisStorage?
+------------------------
+- Persistent storage: Server restart bo'lganda ma'lumotlar saqlanadi
+- User state management: Conversation flow saqlanadi
+- Production ready: Real bot'lar uchun mo'ljallangan
+
+Architecture:
+-------------
+- Bot: Telegram API bilan ishlash
+- Dispatcher: Message routing va handler management
+- RedisStorage: FSM state va ma'lumotlarni saqlash
+"""
 
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
-from aiogram.fsm.storage.memory import MemoryStorage
-import httpx
+from aiogram.fsm.storage.redis import RedisStorage
+from redis.asyncio import Redis
 from loguru import logger
 
 from app.config import config
 from app.handlers import register_all_handlers
 
 
-# ===== Bot va Dispatcher =====
+# ============================================================================
+# BOT INITIALIZATION
+# ============================================================================
+
+# Bot instance - Telegram API bilan ishlash uchun
+# parse_mode="HTML" - Barcha xabarlarda HTML formatlash ishlaydi
 bot = Bot(
     token=config.telegram.bot_token,
     default=DefaultBotProperties(parse_mode="HTML"),
 )
 
-storage = MemoryStorage()
-dp = Dispatcher(storage=storage)
 
-# ===== ERPNext uchun HTTP klient =====
-http_client = httpx.AsyncClient(
-    base_url=config.erp.base_url,
-    headers={
-        "Authorization": f"token {config.erp.api_key}:{config.erp.api_secret}"
-    },
-    timeout=15.0,
-    follow_redirects=True,
+# ============================================================================
+# REDIS STORAGE CONFIGURATION
+# ============================================================================
+
+# Redis connection
+# Nima uchun async Redis?
+# - aiogram async framework - blocking I/O bo'lmasligi kerak
+# - Barcha operatsiyalar async (await)
+redis = Redis(
+    host=config.redis.host,
+    port=config.redis.port,
+    db=config.redis.db,
+    decode_responses=True,  # String'larni avtomatik decode qilish
 )
 
+# RedisStorage - aiogram FSM uchun
+# Bu yerda barcha user state'lar va ma'lumotlar saqlanadi:
+# - Conversation state (qaysi bosqichda)
+# - User data (vaqtincha ma'lumotlar)
+# - Form data (to'ldirilayotgan ma'lumotlar)
+storage = RedisStorage(redis=redis)
 
-# ===== STARTUP / SHUTDOWN =====
+# Dispatcher - barcha message'larni routing qiladi
+dp = Dispatcher(storage=storage)
+
+
+# ============================================================================
+# STARTUP & SHUTDOWN HANDLERS
+# ============================================================================
+
 async def on_startup():
     """
-    FastAPI server ishga tushayotganda chaqiriladi.
-    Shu yerda barcha routerlarni Dispatcher'ga ulab qo'yamiz.
+    Application startup handler.
+
+    Bu function FastAPI server ishga tushganda chaqiriladi.
+
+    Vazifalar:
+    ---------
+    1. Barcha handler'larni register qilish
+    2. Redis connection tekshirish
+    3. ERPNext health check (optional)
+    4. Logging
     """
-    # 🔥 ENG MUHIM QATOR: /start, passport, menu, contract, payments va h.k.
-    # hammasi shu yerda DP ga ulanadi
+    # Barcha handler'larni dispatcher'ga ulash
+    # (start, passport, menu, contract, payments, reminders)
     register_all_handlers(dp)
 
-    logger.info("Webhook bot ishga tushdi!")
-    logger.info(f"ERPNext Base URL: {config.erp.base_url}")
+    # Redis connection tekshirish
+    try:
+        await redis.ping()
+        logger.success("✅ Redis connection successful")
+    except Exception as e:
+        logger.error(f"❌ Redis connection failed: {e}")
+        logger.warning("⚠️ Bot ishlamaydi! Redis'ni ishga tushiring:")
+        logger.warning("   sudo systemctl start redis")
+        raise
+
+    logger.success("🚀 Webhook bot ishga tushdi!")
+    logger.info(f"📡 ERPNext Base URL: {config.erp.base_url}")
+    logger.info(f"💾 Redis: {config.redis.host}:{config.redis.port}/{config.redis.db}")
 
 
 async def on_shutdown():
     """
-    Server yopilganda resurslarni tozalash.
+    Application shutdown handler.
+
+    Server to'xtatilganda barcha resurslarni tozalash.
+
+    Cleanup:
+    --------
+    1. Redis connection yopish
+    2. Bot session yopish
+    3. HTTP client yopish (erpnext_api.py'dan)
     """
-    logger.warning("Bot to‘xtatilmoqda…")
-    await http_client.aclose()
-    await bot.session.close()
-    logger.success("Bot muvaffaqiyatli to‘xtatildi.")
+    logger.warning("🛑 Bot to'xtatilmoqda...")
+
+    # Redis connection yopish
+    try:
+        await redis.close()
+        logger.info("✅ Redis connection closed")
+    except Exception as e:
+        logger.error(f"❌ Redis close error: {e}")
+
+    # Bot session yopish
+    try:
+        await bot.session.close()
+        logger.info("✅ Bot session closed")
+    except Exception as e:
+        logger.error(f"❌ Bot session close error: {e}")
+
+    # ERPNext HTTP client yopish
+    try:
+        from app.services.erpnext_api import close_http_client
+        await close_http_client()
+    except Exception as e:
+        logger.error(f"❌ HTTP client close error: {e}")
+
+    logger.success("✅ Bot muvaffaqiyatli to'xtatildi")
