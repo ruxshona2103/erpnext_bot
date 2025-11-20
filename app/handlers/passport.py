@@ -96,11 +96,21 @@ async def passport_input_handler(msg: Message, state: FSMContext):
             telegram_chat_id=telegram_id  # Avtomatik linking uchun!
         )
 
+        # DEBUG: API response'ni log qilish
+        logger.debug(f"API Response: {data}")
+        logger.debug(f"Success value: {data.get('success')}, Type: {type(data.get('success'))}")
+
         # Loading message o'chirish
         await loading_msg.delete()
 
-        if data.get("success"):
+        # Success check - har qanday truthy value uchun
+        is_success = bool(data.get("success")) and data.get("customer") is not None
+        logger.debug(f"Is Success: {is_success}")
+
+        if is_success:
             # ✅ SUCCESS - Customer topildi va bog'landi!
+            logger.info("🟢 SUCCESS block entered!")
+
             customer = data.get("customer", {})
             customer_name = customer.get("customer_name", "Mijoz")
             customer_id = customer.get("customer_id")
@@ -146,6 +156,9 @@ async def passport_input_handler(msg: Message, state: FSMContext):
 
         else:
             # ❌ FAILED - Customer topilmadi
+            logger.error("🔴 ELSE block entered! success=False")
+            logger.error(f"Full API response: {data}")
+
             error_message = data.get("message_uz") or data.get("message", "Mijoz topilmadi")
 
             logger.warning(f"Passport {passport} not found in ERPNext")
@@ -162,7 +175,9 @@ async def passport_input_handler(msg: Message, state: FSMContext):
 
     except Exception as e:
         # Xatolik yuz berdi
+        logger.error("🔴 EXCEPTION block entered!")
         logger.error(f"Passport authentication error: {e}")
+        logger.exception("Full traceback:")
 
         await loading_msg.delete()
 

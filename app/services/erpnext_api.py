@@ -192,7 +192,7 @@ async def erp_get_customer_by_passport(
     """
     return await erp_request(
         method="GET",
-        endpoint="/api/method/telegram_bot_api.get_customer_by_passport",
+        endpoint="/api/method/cash_flow_app.cash_flow_management.api.telegram_bot_api.get_customer_by_passport",
         params={
             "passport_series": passport,
             "telegram_chat_id": telegram_chat_id,
@@ -232,7 +232,7 @@ async def erp_get_customer_by_telegram_id(telegram_id: int) -> Dict[str, Any]:
     """
     return await erp_request(
         method="GET",
-        endpoint="/api/method/telegram_bot_api.get_customer_by_telegram_id",
+        endpoint="/api/method/cash_flow_app.cash_flow_management.api.telegram_bot_api.get_customer_by_telegram_id",
         params={"telegram_id": telegram_id}
     )
 
@@ -253,7 +253,7 @@ async def erp_get_customer_by_phone(
     """
     return await erp_request(
         method="GET",
-        endpoint="/api/method/telegram_bot_api.get_customer_by_phone",
+        endpoint="/api/method/cash_flow_app.cash_flow_management.api.telegram_bot_api.get_customer_by_phone",
         params={
             "phone": phone,
             "telegram_chat_id": telegram_chat_id,
@@ -311,8 +311,89 @@ async def erp_get_customer_contracts(customer_id: str) -> Dict[str, Any]:
     """
     return await erp_request(
         method="GET",
-        endpoint="/api/method/telegram_bot_api.get_customer_contracts_detailed",
+        endpoint="/api/method/cash_flow_app.cash_flow_management.api.telegram_bot_api.get_customer_contracts_detailed",
         params={"customer_name": customer_id}
+    )
+
+
+async def erp_get_contracts_by_telegram_id(telegram_id: int) -> Dict[str, Any]:
+    """
+    Telegram ID orqali customer va uning shartnomalarini olish.
+
+    Bu wrapper function menu.py uchun - bitta chaqiruvda customer va contracts olinadi.
+
+    Args:
+        telegram_id: Telegram user ID
+
+    Returns:
+        {
+            "success": True,
+            "customer": {...},
+            "contracts": [...]
+        }
+    """
+    # Avval telegram ID bo'yicha customerni topamiz
+    customer_data = await erp_get_customer_by_telegram_id(telegram_id)
+
+    if not customer_data.get("success"):
+        return customer_data
+
+    # Agar customer topilsa va uning ID si bo'lsa, shartnomalarini olamiz
+    customer = customer_data.get("customer")
+    if not customer:
+        return {"success": False, "message": "Customer ma'lumotlari topilmadi"}
+
+    customer_id = customer.get("id") or customer.get("name")
+    if not customer_id:
+        return {"success": False, "message": "Customer ID topilmadi"}
+
+    # Shartnomalarni olamiz
+    contracts_data = await erp_get_customer_contracts(customer_id)
+
+    if not contracts_data.get("success"):
+        # Agar shartnomalar topilmasa ham, customerni qaytaramiz
+        return {
+            "success": True,
+            "customer": customer,
+            "contracts": []
+        }
+
+    # Customer va contracts ni birga qaytaramiz
+    return {
+        "success": True,
+        "customer": customer,
+        "contracts": contracts_data.get("contracts", [])
+    }
+
+
+async def erp_get_contract_details(contract_id: str) -> Dict[str, Any]:
+    """
+    Bitta shartnoma uchun to'liq ma'lumotlar.
+
+    Bu function contract_id bo'yicha bitta shartnomaning barcha detallari olinadi.
+
+    Args:
+        contract_id: Shartnoma ID (SAL-ORD-00001)
+
+    Returns:
+        {
+            "success": True,
+            "contract": {
+                "contract_id": "SAL-ORD-00001",
+                "contract_date": "15.01.2025",
+                "total_amount": 15000000,
+                "paid": 5000000,
+                "remaining": 10000000,
+                "products": [...],
+                "payments_history": [...],
+                "next_payment": {...}
+            }
+        }
+    """
+    return await erp_request(
+        method="GET",
+        endpoint="/api/method/cash_flow_app.cash_flow_management.api.telegram_bot_api.get_contract_details",
+        params={"contract_id": contract_id}
     )
 
 
@@ -355,7 +436,7 @@ async def erp_get_payment_schedule(contract_id: str) -> Dict[str, Any]:
     """
     return await erp_request(
         method="GET",
-        endpoint="/api/method/telegram_bot_api.get_payment_schedule",
+        endpoint="/api/method/cash_flow_app.cash_flow_management.api.telegram_bot_api.get_payment_schedule",
         params={"contract_id": contract_id}
     )
 
@@ -384,7 +465,7 @@ async def erp_get_payment_history(contract_id: str) -> Dict[str, Any]:
     """
     return await erp_request(
         method="GET",
-        endpoint="/api/method/telegram_bot_api.get_payment_history",
+        endpoint="/api/method/cash_flow_app.cash_flow_management.api.telegram_bot_api.get_payment_history",
         params={"contract_id": contract_id}
     )
 
@@ -419,7 +500,7 @@ async def erp_get_upcoming_payments(customer_id: str) -> Dict[str, Any]:
     """
     return await erp_request(
         method="GET",
-        endpoint="/api/method/telegram_bot_api.get_upcoming_payments",
+        endpoint="/api/method/cash_flow_app.cash_flow_management.api.telegram_bot_api.get_upcoming_payments",
         params={"customer_name": customer_id}
     )
 
@@ -469,7 +550,7 @@ async def erp_get_customers_needing_reminders(
 
     return await erp_request(
         method="GET",
-        endpoint="/api/method/telegram_bot_api.get_customers_needing_reminders",
+        endpoint="/api/method/cash_flow_app.cash_flow_management.api.telegram_bot_api.get_customers_needing_reminders",
         params=params
     )
 
@@ -508,7 +589,7 @@ async def erp_get_overdue_customers() -> Dict[str, Any]:
     """
     return await erp_request(
         method="GET",
-        endpoint="/api/method/telegram_bot_api.get_overdue_customers"
+        endpoint="/api/method/cash_flow_app.cash_flow_management.api.telegram_bot_api.get_overdue_customers"
     )
 
 

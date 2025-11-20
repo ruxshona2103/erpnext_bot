@@ -4,7 +4,8 @@ import asyncio
 from datetime import datetime, timedelta
 
 from loguru import logger
-from app.loader import bot, http_client
+from app.loader import bot
+from app.services.erpnext_api import http_client
 
 
 async def fetch_due_payments():

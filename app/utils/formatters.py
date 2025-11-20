@@ -67,6 +67,66 @@ def format_quantity(qty: Any) -> str:
         return "0"
 
 
+def format_phone(phone: Any) -> str:
+    """
+    Telefon raqamini formatlash.
+
+    Args:
+        phone: Telefon raqami (har qanday formatda)
+
+    Returns:
+        Formatlangan telefon: +998 90 123 45 67
+    """
+    if not phone:
+        return "—"
+
+    # Faqat raqamlarni olish
+    digits = ''.join(filter(str.isdigit, str(phone)))
+
+    # Agar 12 raqam bo'lsa (998901234567)
+    if len(digits) == 12 and digits.startswith('998'):
+        return f"+{digits[:3]} {digits[3:5]} {digits[5:8]} {digits[8:10]} {digits[10:]}"
+
+    # Agar 9 raqam bo'lsa (901234567) - 998 qo'shamiz
+    if len(digits) == 9:
+        return f"+998 {digits[:2]} {digits[2:5]} {digits[5:7]} {digits[7:]}"
+
+    # Boshqa format bo'lsa - shunchaki qaytaramiz
+    if digits:
+        return f"+{digits}" if not str(phone).startswith('+') else str(phone)
+
+    return "—"
+
+
+def clean_customer_name(name: Any) -> str:
+    """
+    Customer name'dan keraksiz belgilarni olib tashlash.
+
+    Masalan: "(2) Doniyor 93 188 03 00" → "Doniyor"
+
+    Args:
+        name: Customer name (har qanday formatda)
+
+    Returns:
+        Tozalangan ism
+    """
+    if not name:
+        return "—"
+
+    import re
+    name_str = str(name)
+
+    # (2) kabi belgilarni olib tashlash
+    name_str = re.sub(r'^\(\d+\)\s*', '', name_str)
+
+    # Oxiridagi raqamlarni olib tashlash (93 188 03 00)
+    name_str = re.sub(r'\s+\d+[\s\d]*$', '', name_str)
+
+    # Agar hamma narsa o'chirilgan bo'lsa, asl nomni qaytarish
+    cleaned = name_str.strip()
+    return cleaned if cleaned else str(name)
+
+
 # ============================================================================
 # CUSTOMER PROFILE FORMATTER
 # ============================================================================
@@ -100,30 +160,63 @@ def format_customer_profile(data: Dict[str, Any]) -> str:
     contracts = data.get("contracts", [])
     next_payments = data.get("next_payments", [])
 
-    # Customer asosiy ma'lumotlari
-    text = "👤 <b>Shaxsiy ma'lumotlar</b>\n\n"
-    text += f"👨‍💼 Ism: <b>{customer.get('customer_name', '—')}</b>\n"
-    text += f"📱 Telefon: <b>{customer.get('phone', '—')}</b>\n"
-    text += f"🆔 ID: <code>{customer.get('customer_id', '—')}</code>\n"
+    # ============================================
+    # SHAXSIY MA'LUMOTLAR
+    # ============================================
+    text = "━━━━━━━━━━━━━━━━━━━━\n"
+    text += "👤 <b>SHAXSIY MA'LUMOTLAR</b>\n"
+    text += "━━━━━━━━━━━━━━━━━━━━\n\n"
 
-    # Shartnomalar umumiy statistika
+    text += f"👨‍💼 <b>Ism:</b> {clean_customer_name(customer.get('customer_name', '—'))}\n"
+    text += f"📱 <b>Telefon:</b> <code>{format_phone(customer.get('phone'))}</code>\n"
+
+    # Passport
+    if customer.get('passport'):
+        text += f"🆔 <b>Passport:</b> <code>{customer.get('passport')}</code>\n"
+
+    # Classification
+    if customer.get('classification'):
+        classification_text = {
+            'A': 'A (A\'lo)',
+            'B': 'B (Yaxshi)',
+            'C': 'C (O\'rtacha)',
+            'D': 'D (Past)'
+        }.get(customer.get('classification'), customer.get('classification'))
+        text += f"⭐ <b>Toifa:</b> {classification_text}\n"
+
+    text += f"🔖 <b>ID:</b> <code>{customer.get('customer_id', '—')}</code>\n"
+
+    # ============================================
+    # SHARTNOMALAR STATISTIKASI
+    # ============================================
     if contracts:
         total_amount = sum(c.get('total_amount', 0) for c in contracts)
         total_paid = sum(c.get('paid', 0) for c in contracts)
         total_remaining = sum(c.get('remaining', 0) for c in contracts)
 
-        text += "\n📊 <b>Umumiy statistika</b>\n\n"
-        text += f"📄 Shartnomalar: <b>{len(contracts)} ta</b>\n"
-        text += f"💰 Umumiy summa: <b>{format_money(total_amount)}</b> so'm\n"
-        text += f"✅ To'langan: <b>{format_money(total_paid)}</b> so'm\n"
-        text += f"📉 Qarz: <b>{format_money(total_remaining)}</b> so'm\n"
-    else:
-        text += "\n📄 Shartnomalar mavjud emas\n"
+        text += "\n━━━━━━━━━━━━━━━━━━━━\n"
+        text += "📊 <b>SHARTNOMALAR</b>\n"
+        text += "━━━━━━━━━━━━━━━━━━━━\n\n"
 
-    # Yaqin to'lovlar
+        text += f"📄 <b>Jami shartnomalar:</b> {len(contracts)} ta\n"
+        text += f"💰 <b>Umumiy summa:</b> {format_money(total_amount)} so'm\n"
+        text += f"✅ <b>To'langan:</b> {format_money(total_paid)} so'm\n"
+        text += f"📉 <b>Qolgan qarz:</b> {format_money(total_remaining)} so'm\n"
+    else:
+        text += "\n━━━━━━━━━━━━━━━━━━━━\n"
+        text += "📄 <b>SHARTNOMALAR</b>\n"
+        text += "━━━━━━━━━━━━━━━━━━━━\n\n"
+        text += "ℹ️ Hozircha shartnomalar mavjud emas\n"
+
+    # ============================================
+    # YAQIN TO'LOVLAR
+    # ============================================
     if next_payments:
-        text += "\n🔔 <b>Yaqin to'lovlar:</b>\n\n"
-        for payment in next_payments[:3]:  # Faqat 3 ta yaqin to'lov
+        text += "\n━━━━━━━━━━━━━━━━━━━━\n"
+        text += "🔔 <b>YAQIN TO'LOVLAR</b>\n"
+        text += "━━━━━━━━━━━━━━━━━━━━\n\n"
+
+        for idx, payment in enumerate(next_payments[:5], 1):  # Eng ko'pi 5 ta
             status_emoji = {
                 "overdue": "❌",
                 "today": "⏰",
@@ -131,10 +224,15 @@ def format_customer_profile(data: Dict[str, Any]) -> str:
                 "upcoming": "📅"
             }.get(payment.get('status'), "📅")
 
-            text += f"{status_emoji} <b>{payment.get('contract_id')}</b>\n"
-            text += f"   💵 Summa: <b>{format_money(payment.get('amount'))}</b> so'm\n"
+            text += f"{idx}. {status_emoji} <b>{payment.get('contract_id')}</b>\n"
             text += f"   📅 Sana: <b>{payment.get('due_date')}</b>\n"
-            text += f"   ⏳ {payment.get('status_uz', payment.get('status_text'))}\n\n"
+            text += f"   💵 Summa: <b>{format_money(payment.get('amount'))}</b> so'm\n"
+            text += f"   📊 Holat: <i>{payment.get('status_uz', payment.get('status_text', '—'))}</i>\n"
+
+            if idx < len(next_payments[:5]):
+                text += "\n"
+
+    text += "\n━━━━━━━━━━━━━━━━━━━━"
 
     return text
 
@@ -175,47 +273,62 @@ def format_contract_with_products(contract: Dict[str, Any]) -> str:
     Returns:
         HTML formatted string
     """
-    text = f"📄 <b>Shartnoma #{contract.get('contract_id')}</b>\n\n"
+    text = "━━━━━━━━━━━━━━━━━━━━\n"
+    text += f"📄 <b>SHARTNOMA DETALLARI</b>\n"
+    text += "━━━━━━━━━━━━━━━━━━━━\n\n"
 
     # Asosiy ma'lumotlar
-    text += f"📅 Sana: <b>{contract.get('contract_date')}</b>\n"
-    text += f"📊 Holat: <b>{contract.get('status_uz', contract.get('status'))}</b>\n\n"
+    text += f"🔖 <b>Shartnoma ID:</b> <code>{contract.get('contract_id')}</code>\n"
+    text += f"📅 <b>Sana:</b> {contract.get('contract_date')}\n"
+    text += f"📊 <b>Holat:</b> {contract.get('status_uz', contract.get('status'))}\n"
 
     # Moliyaviy ma'lumotlar
-    text += "💰 <b>Moliyaviy ma'lumotlar:</b>\n\n"
-    text += f"   Umumiy summa: <b>{format_money(contract.get('total_amount'))}</b> so'm\n"
+    text += "\n━━━━━━━━━━━━━━━━━━━━\n"
+    text += "💰 <b>MOLIYAVIY MA'LUMOTLAR</b>\n"
+    text += "━━━━━━━━━━━━━━━━━━━━\n\n"
+
+    text += f"💵 <b>Umumiy summa:</b> {format_money(contract.get('total_amount'))} so'm\n"
 
     if contract.get('downpayment'):
-        text += f"   Boshlang'ich to'lov: <b>{format_money(contract.get('downpayment'))}</b> so'm\n"
+        text += f"💳 <b>Boshlang'ich to'lov:</b> {format_money(contract.get('downpayment'))} so'm\n"
 
-    text += f"   ✅ To'langan: <b>{format_money(contract.get('paid'))}</b> so'm\n"
-    text += f"   📉 Qarz: <b>{format_money(contract.get('remaining'))}</b> so'm\n"
+    text += f"✅ <b>To'langan:</b> {format_money(contract.get('paid'))} so'm\n"
+    text += f"📉 <b>Qolgan qarz:</b> {format_money(contract.get('remaining'))} so'm\n"
 
     # Mahsulotlar ro'yxati
     products = contract.get('products', [])
     if products:
-        text += "\n🛍 <b>Mahsulotlar:</b>\n\n"
+        text += "\n━━━━━━━━━━━━━━━━━━━━\n"
+        text += "🛍 <b>MAHSULOTLAR</b>\n"
+        text += "━━━━━━━━━━━━━━━━━━━━\n\n"
+
         for idx, product in enumerate(products, 1):
-            text += f"{idx}. <b>{product.get('name')}</b>\n"
-            text += f"   📦 Miqdor: <b>{format_quantity(product.get('qty'))}</b> dona\n"
-            text += f"   💵 Narx: <b>{format_money(product.get('price'))}</b> so'm\n"
-            text += f"   💰 Jami: <b>{format_money(product.get('total_price'))}</b> so'm\n"
+            text += f"<b>{idx}. {product.get('name')}</b>\n"
+            text += f"   📦 Miqdor: {format_quantity(product.get('qty'))} dona\n"
+            text += f"   💵 Narx: {format_money(product.get('price'))} so'm\n"
+            text += f"   💰 Jami: {format_money(product.get('total_price'))} so'm\n"
 
             if product.get('imei'):
                 text += f"   🔢 IMEI: <code>{product.get('imei')}</code>\n"
 
             if product.get('notes'):
-                text += f"   📝 {product.get('notes')}\n"
+                text += f"   📝 Izoh: {product.get('notes')}\n"
 
-            text += "\n"
+            if idx < len(products):
+                text += "\n"
 
     # Keyingi to'lov
     next_payment = contract.get('next_payment')
     if next_payment:
-        text += "📅 <b>Keyingi to'lov:</b>\n\n"
-        text += f"   Sana: <b>{next_payment.get('due_date')}</b>\n"
-        text += f"   Summa: <b>{format_money(next_payment.get('amount'))}</b> so'm\n"
-        text += f"   Holat: <b>{next_payment.get('status_uz', next_payment.get('status_text'))}</b>\n"
+        text += "\n━━━━━━━━━━━━━━━━━━━━\n"
+        text += "📅 <b>KEYINGI TO'LOV</b>\n"
+        text += "━━━━━━━━━━━━━━━━━━━━\n\n"
+
+        text += f"📆 <b>Sana:</b> {next_payment.get('due_date')}\n"
+        text += f"💵 <b>Summa:</b> {format_money(next_payment.get('amount'))} so'm\n"
+        text += f"📊 <b>Holat:</b> <i>{next_payment.get('status_uz', next_payment.get('status_text'))}</i>\n"
+
+    text += "\n━━━━━━━━━━━━━━━━━━━━"
 
     return text
 
@@ -396,11 +509,13 @@ def format_upcoming_payments(data: Dict[str, Any]) -> str:
     payments = data.get("payments", [])
 
     if not payments:
-        return "✅ Yaqin to'lovlar yo'q"
+        return "✅ <b>Yaqin to'lovlar yo'q</b>\n\nBarcha to'lovlar vaqtida amalga oshirilgan! 🎉"
 
-    text = f"🔔 <b>Yaqin to'lovlar</b> ({len(payments)} ta)\n\n"
+    text = "━━━━━━━━━━━━━━━━━━━━\n"
+    text += f"🔔 <b>YAQIN TO'LOVLAR</b> ({len(payments)} ta)\n"
+    text += "━━━━━━━━━━━━━━━━━━━━\n\n"
 
-    for payment in payments:
+    for idx, payment in enumerate(payments, 1):
         status = payment.get('status')
         days_left = payment.get('days_left', 0)
 
@@ -418,12 +533,57 @@ def format_upcoming_payments(data: Dict[str, Any]) -> str:
             emoji = "📅"
             status_text = f"{days_left} kun qoldi"
 
-        text += f"{emoji} <b>{payment.get('contract_id')}</b>\n"
-        text += f"   📅 Sana: <b>{payment.get('due_date')}</b>\n"
-        text += f"   💰 Summa: <b>{format_money(payment.get('amount'))}</b> so'm\n"
-        text += f"   ⏳ {status_text}\n\n"
+        text += f"<b>{idx}. {emoji} {payment.get('contract_id')}</b>\n"
+        text += f"   📅 <b>Sana:</b> {payment.get('due_date')}\n"
+        text += f"   💰 <b>Summa:</b> {format_money(payment.get('amount'))} so'm\n"
+
+        if payment.get('outstanding'):
+            text += f"   📉 <b>Qarz:</b> {format_money(payment.get('outstanding'))} so'm\n"
+
+        text += f"   📊 <b>Holat:</b> {status_text}\n"
+
+        if idx < len(payments):
+            text += "\n"
+
+    text += "\n━━━━━━━━━━━━━━━━━━━━"
 
     return text
+
+
+# ============================================================================
+# CONTRACT DETAILS FORMATTER (WRAPPER)
+# ============================================================================
+
+def format_contract_details(data: Dict[str, Any]) -> str:
+    """
+    Shartnoma detallarini formatlash (wrapper function).
+
+    Bu function contract handler uchun - API response ni to'g'ridan-to'g'ri formatlaydi.
+
+    ERPNext API Response:
+    ---------------------
+    {
+        "success": True,
+        "contract": {...}
+    }
+
+    Args:
+        data: ERPNext API response with contract details
+
+    Returns:
+        HTML formatted string
+    """
+    # Agar API xato qaytargan bo'lsa
+    if not data.get("success"):
+        return format_error_message(data)
+
+    # Contract ma'lumotlarini olamiz
+    contract = data.get("contract")
+    if not contract:
+        return "❌ Shartnoma ma'lumotlari topilmadi"
+
+    # Contract ni formatlash
+    return format_contract_with_products(contract)
 
 
 # ============================================================================
