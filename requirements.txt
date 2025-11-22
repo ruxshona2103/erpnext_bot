@@ -37,3 +37,4 @@ redis==5.0.1
 
 # Retry logic for API reliability
 tenacity==8.2.3
+apscheduler
