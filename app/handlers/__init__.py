@@ -4,6 +4,7 @@ from .passport import register_passport_handlers
 from .menu import register_menu_handlers
 from .contract import register_contract_handlers
 from .payments import register_payment_handlers
+from .reminders_handler import register_reminders_handlers
 
 
 def register_all_handlers(dp: Dispatcher):
@@ -17,3 +18,4 @@ def register_all_handlers(dp: Dispatcher):
     register_menu_handlers(dp)
     register_contract_handlers(dp)
     register_payment_handlers(dp)
+    register_reminders_handlers(dp)  # ✅ YANGI: Eslatmalar handler
