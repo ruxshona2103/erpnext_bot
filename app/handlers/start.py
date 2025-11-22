@@ -67,7 +67,15 @@ async def start_message(msg: Message, state: FSMContext):
         logger.info(f"Checking telegram_id {telegram_id} in ERPNext...")
         data = await erp_get_customer_by_telegram_id(telegram_id)
 
-        if data.get("success"):
+        # ✅ SUCCESS CHECK - aniq va xavfsiz
+        success = data.get("success")
+        has_customer = data.get("customer") is not None and len(data.get("customer", {})) > 0
+
+        # String "true" ham qabul qilish
+        if isinstance(success, str):
+            success = success.lower() in ('true', '1', 'yes')
+
+        if bool(success) and has_customer:
             # ✅ Customer topildi - avtomatik kirish!
             customer = data.get("customer", {})
             customer_name = customer.get("customer_name", "Mijoz")
