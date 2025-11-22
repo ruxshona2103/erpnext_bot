@@ -46,6 +46,30 @@ router = Router()
 PASSPORT_REGEX = re.compile(r'^[A-Z]{2}\d{7}$', re.IGNORECASE)
 
 
+async def passport_search_button_handler(msg: Message, state: FSMContext):
+    """
+    "🔍 Passport orqali qidirish" tugmasi bosilganda.
+
+    Bu tugma user allaqachon bog'langan bo'lsa ham, boshqa customer'ni
+    qidirishi uchun yoki qayta passport kiritishi uchun.
+
+    Flow:
+    -----
+    1. Passport kiritishni so'rash
+    2. PassportState.waiting_for_passport state'ga o'tish
+    3. passport_input_handler ishga tushadi
+    """
+    await msg.answer(
+        "🔍 <b>Passport bo'yicha qidirish</b>\n\n"
+        "Passport seriya raqamini kiriting:\n\n"
+        "Masalan: <code>AB1234567</code> yoki <code>AA7654321</code>",
+        reply_markup=main_menu_keyboard()
+    )
+
+    # Passport kutish state'ga o'tish
+    await state.set_state(PassportState.waiting_for_passport)
+
+
 async def passport_input_handler(msg: Message, state: FSMContext):
     """
     Passport ID input handler - birinchi marta authentication.
@@ -97,15 +121,24 @@ async def passport_input_handler(msg: Message, state: FSMContext):
         )
 
         # DEBUG: API response'ni log qilish
-        logger.debug(f"API Response: {data}")
+        logger.debug(f"API Response keys: {list(data.keys())}")
         logger.debug(f"Success value: {data.get('success')}, Type: {type(data.get('success'))}")
 
         # Loading message o'chirish
         await loading_msg.delete()
 
-        # Success check - har qanday truthy value uchun
-        is_success = bool(data.get("success")) and data.get("customer") is not None
-        logger.debug(f"Is Success: {is_success}")
+        # ✅ SUCCESS CHECK - aniq va xavfsiz
+        # success field tekshirish (True, "true", 1, etc.)
+        success = data.get("success")
+        has_customer = data.get("customer") is not None and len(data.get("customer", {})) > 0
+
+        # String "true" yoki "True" ham qabul qilish (ERPNext ba'zan string qaytarishi mumkin)
+        if isinstance(success, str):
+            success = success.lower() in ('true', '1', 'yes')
+
+        is_success = bool(success) and has_customer
+
+        logger.debug(f"Is Success: {is_success} (success={success}, has_customer={has_customer})")
 
         if is_success:
             # ✅ SUCCESS - Customer topildi va bog'landi!
@@ -155,18 +188,25 @@ async def passport_input_handler(msg: Message, state: FSMContext):
             )
 
         else:
-            # ❌ FAILED - Customer topilmadi
-            logger.error("🔴 ELSE block entered! success=False")
-            logger.error(f"Full API response: {data}")
+            # ❌ FAILED - Customer topilmadi yoki xato
+            logger.error("🔴 ELSE block entered! success=False or customer=None")
+            logger.error(f"API success: {data.get('success')}, has customer: {bool(data.get('customer'))}")
+            logger.debug(f"Full API response keys: {list(data.keys())}")
 
-            error_message = data.get("message_uz") or data.get("message", "Mijoz topilmadi")
+            # ⚠️ MUHIM: error_message ni xavfsiz olish
+            error_message = data.get("message_uz") or data.get("message")
 
-            logger.warning(f"Passport {passport} not found in ERPNext")
+            # Agar error_message None yoki dict bo'lsa - default message
+            if not error_message or not isinstance(error_message, str):
+                error_message = "Passport ID bo'yicha mijoz topilmadi"
+
+            logger.warning(f"Passport {passport} authentication failed: {error_message}")
 
             await msg.answer(
-                f"❌ <b>{error_message}</b>\n\n"
+                f"❌ <b>Xatolik</b>\n\n"
+                f"{error_message}\n\n"
                 "Iltimos, passport ID'ni tekshirib, qaytadan kiriting.\n\n"
-                "Agar muammo davom etsa, administratorga murojaat qiling:\n"
+                "<i>Agar muammo davom etsa, administratorga murojaat qiling:</i>\n"
                 "📞 Telefon: +998 XX XXX XX XX",
                 reply_markup=main_menu_keyboard()
             )
@@ -201,6 +241,12 @@ def register_passport_handlers(dp):
         dp: Dispatcher instance
     """
     dp.include_router(router)
+
+    # ✅ YANGI: "🔍 Passport orqali qidirish" tugmasi uchun handler
+    router.message.register(
+        passport_search_button_handler,
+        F.text == "🔍 Passport orqali qidirish"
+    )
 
     # Passport kutayotgan state'da text message kelsa - bu handler ishlaydi
     router.message.register(
