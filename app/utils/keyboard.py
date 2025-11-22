@@ -24,13 +24,16 @@ def main_menu_keyboard():
 
 
 #CONTRACT LIST (Inline Keyboard)
-def contract_list_keyboard(contracts: list):
+def contract_list_keyboard(contracts: list, callback_prefix: str = "contract"):
     """
     Contract ro'yxati — foydalanuvchi birini tanlaydi.
 
     Args:
         contracts: List of contracts from ERPNext API
             [{"contract_id": "SAL-ORD-00001"}, ...]
+        callback_prefix: Callback prefix (contract yoki payment)
+            - "contract" → contract details ko'rsatish uchun
+            - "payment" → payment history ko'rsatish uchun
 
     Returns:
         InlineKeyboardMarkup with contract buttons
@@ -47,7 +50,7 @@ def contract_list_keyboard(contracts: list):
             buttons.append([
                 InlineKeyboardButton(
                     text=f"📄 {cid}",
-                    callback_data=f"contract:{cid}"
+                    callback_data=f"{callback_prefix}:{cid}"  # ← YANGI: prefix parametri
                 )
             ])
 
