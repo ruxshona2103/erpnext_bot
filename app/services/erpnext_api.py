@@ -108,6 +108,14 @@ async def erp_request(
         response.raise_for_status()
         result = response.json()
 
+        # ⚠️ MUHIM: ERPNext ba'zan response'ni "message" key ichida qaytaradi
+        # Agar shunday bo'lsa - unwrap qilamiz
+        if "message" in result and isinstance(result["message"], dict):
+            # Agar message ichida success field bo'lsa - bu wrapped response
+            if "success" in result["message"] or "customer" in result["message"]:
+                logger.debug(f"Unwrapping response from 'message' key")
+                result = result["message"]
+
         logger.debug(f"ERP Response: {endpoint} -> success={result.get('success', 'unknown')}")
         return result
 
@@ -190,14 +198,19 @@ async def erp_get_customer_by_passport(
             "is_new_link": True/False  # Yangi bog'langanmi?
         }
     """
-    return await erp_request(
+    logger.info(f"[API] get_customer_by_passport called: passport={passport}, telegram_id={telegram_chat_id}")
+
+    result = await erp_request(
         method="GET",
         endpoint="/api/method/cash_flow_app.cash_flow_management.api.telegram_bot_api.get_customer_by_passport",
         params={
             "passport_series": passport,
-            "telegram_chat_id": telegram_chat_id,
+            "telegram_chat_id": str(telegram_chat_id) if telegram_chat_id else None,  # ✅ str()
         }
     )
+
+    logger.info(f"[API] get_customer_by_passport response: success={result.get('success')}, is_new_link={result.get('is_new_link')}")
+    return result
 
 
 async def erp_get_customer_by_telegram_id(telegram_id: int) -> Dict[str, Any]:
@@ -206,23 +219,7 @@ async def erp_get_customer_by_telegram_id(telegram_id: int) -> Dict[str, Any]:
 
     Bu endpoint user /start bosaida ishlatiladi - allaqachon bog'langanligini tekshirish.
 
-    ⚠️ MUHIM: Bu endpoint ERPNext'ga qo'shilishi kerak!
-
-    Endpoint qanday ishlashi kerak:
-    --------------------------------
-    ```python
-    @frappe.whitelist(allow_guest=True)
-    def get_customer_by_telegram_id(telegram_id):
-        customer = frappe.db.get_value(
-            "Customer",
-            {"custom_telegram_id": str(telegram_id)},
-            ["name", "customer_name", "custom_phone_1", "custom_passport_series"],
-            as_dict=True
-        )
-        if customer:
-            return get_customer_by_id(customer.name, telegram_id)
-        return {"success": False, "message": "Customer topilmadi"}
-    ```
+    ⚠️ MUHIM: telegram_id STRING sifatida uzatiladi (ERPNext str kutadi)!
 
     Args:
         telegram_id: Telegram user ID
@@ -230,11 +227,16 @@ async def erp_get_customer_by_telegram_id(telegram_id: int) -> Dict[str, Any]:
     Returns:
         Customer ma'lumotlari yoki {success: False}
     """
-    return await erp_request(
+    logger.info(f"[API] get_customer_by_telegram_id called with: {telegram_id}")
+
+    result = await erp_request(
         method="GET",
         endpoint="/api/method/cash_flow_app.cash_flow_management.api.telegram_bot_api.get_customer_by_telegram_id",
-        params={"telegram_id": telegram_id}
+        params={"telegram_id": str(telegram_id)}  # ✅ MUHIM: str() qo'shildi!
     )
+
+    logger.info(f"[API] get_customer_by_telegram_id response: success={result.get('success')}")
+    return result
 
 
 async def erp_get_customer_by_phone(
@@ -256,7 +258,7 @@ async def erp_get_customer_by_phone(
         endpoint="/api/method/cash_flow_app.cash_flow_management.api.telegram_bot_api.get_customer_by_phone",
         params={
             "phone": phone,
-            "telegram_chat_id": telegram_chat_id,
+            "telegram_chat_id": str(telegram_chat_id) if telegram_chat_id else None,  # ✅ str()
         }
     )
 
@@ -338,31 +340,18 @@ async def erp_get_contracts_by_telegram_id(telegram_id: int) -> Dict[str, Any]:
     if not customer_data.get("success"):
         return customer_data
 
-    # Agar customer topilsa va uning ID si bo'lsa, shartnomalarini olamiz
+    # Agar customer topilsa - contracts allaqachon API javobida kelgan!
     customer = customer_data.get("customer")
     if not customer:
         return {"success": False, "message": "Customer ma'lumotlari topilmadi"}
 
-    customer_id = customer.get("id") or customer.get("name")
-    if not customer_id:
-        return {"success": False, "message": "Customer ID topilmadi"}
+    # ✅ API javobidan contracts ni olish (allaqachon kelgan!)
+    contracts = customer_data.get("contracts", [])
 
-    # Shartnomalarni olamiz
-    contracts_data = await erp_get_customer_contracts(customer_id)
-
-    if not contracts_data.get("success"):
-        # Agar shartnomalar topilmasa ham, customerni qaytaramiz
-        return {
-            "success": True,
-            "customer": customer,
-            "contracts": []
-        }
-
-    # Customer va contracts ni birga qaytaramiz
     return {
         "success": True,
         "customer": customer,
-        "contracts": contracts_data.get("contracts", [])
+        "contracts": contracts
     }
 
 
@@ -470,9 +459,221 @@ async def erp_get_payment_history(contract_id: str) -> Dict[str, Any]:
     )
 
 
+async def erp_get_payment_history_with_products(contract_id: str) -> Dict[str, Any]:
+    """
+    Shartnoma bo'yicha to'lovlar tarixi + Mahsulotlar.
+
+    Bu funksiya Telegram bot uchun maxsus - faqat muhim ma'lumotlar:
+    - Mahsulotlar (nomi, miqdori, narxi, IMEI)
+    - To'lovlar (sana, summa, usul)
+    - Shartnoma umumiy ma'lumotlari
+    - SHAXSIY MA'LUMOTLAR CHIQMAYDI!
+
+    Args:
+        contract_id: Shartnoma ID (CON-2025-00245)
+
+    Returns:
+        {
+            "success": True,
+            "contract": {
+                "contract_id": "CON-2025-00245",
+                "contract_date": "08.07.2025",
+                "total_amount": 1116.0,
+                "paid": 300.0,
+                "remaining": 816.0
+            },
+            "products": [
+                {
+                    "name": "iPhone 15 Pro Max 256GB",
+                    "qty": 1,
+                    "price": 1116.0,
+                    "total_price": 1116.0,
+                    "imei": "123456789",
+                    "notes": ""
+                }
+            ],
+            "payments": [
+                {
+                    "date": "10.07.2025",
+                    "amount": 300.0,
+                    "method": "Naqd",
+                    "payment_id": "PE-00001"
+                }
+            ],
+            "total_paid": 300.0,
+            "total_payments": 1
+        }
+    """
+    return await erp_request(
+        method="GET",
+        endpoint="/api/method/cash_flow_app.cash_flow_management.api.telegram_bot_api.get_payment_history_with_products",
+        params={"contract_id": contract_id}
+    )
+
+
 # ============================================================================
 # 🔔 NOTIFICATION & REMINDER APIs
 # ============================================================================
+
+async def erp_get_reminders_by_telegram_id(telegram_id: int) -> Dict[str, Any]:
+    """
+    Telegram ID orqali customerning eslatmalarini olish.
+
+    Bu endpoint "Eslatmalar" button bosilganda ishlatiladi.
+
+    Qanday ishlaydi:
+    ----------------
+    1. Telegram ID orqali customerni topadi
+    2. Yaqin muddat to'lovlarini ko'rsatadi (30 kun ichida)
+    3. Har bir to'lov uchun status va prioritet aniqlaydi
+
+    Args:
+        telegram_id: Telegram user ID
+
+    Returns:
+        {
+            "success": True,
+            "customer_id": "CUST-00001",
+            "customer_name": "Alisher Navoiy",
+            "reminders": [
+                {
+                    "contract_id": "CON-2025-00245",
+                    "contract_date": "08.07.2025",
+                    "due_date": "08.12.2025",
+                    "amount": 100.0,
+                    "outstanding": 100.0,
+                    "days_left": 3,
+                    "status": "soon",
+                    "status_uz": "3 kun qoldi 🟢",
+                    "priority": "medium",
+                    "payment_number": 5
+                }
+            ],
+            "total_reminders": 1,
+            "message": "Eslatmalar yuklandi"
+        }
+    """
+    return await erp_request(
+        method="GET",
+        endpoint="/api/method/cash_flow_app.cash_flow_management.api.telegram_bot_api.get_reminders_by_telegram_id",
+        params={"telegram_id": str(telegram_id)}
+    )
+
+
+async def erp_get_payment_history_by_telegram_id(telegram_id: int) -> Dict[str, Any]:
+    """
+    Telegram ID orqali customerning barcha to'lovlar tarixini olish.
+
+    Bu endpoint "Tolov tarixi" button bosilganda ishlatiladi.
+
+    Qanday ishlaydi:
+    ----------------
+    1. Telegram ID orqali customerni topadi
+    2. Barcha shartnomalarni oladi
+    3. Har bir shartnoma uchun to'lovlar tarixini ko'rsatadi
+
+    Args:
+        telegram_id: Telegram user ID
+
+    Returns:
+        {
+            "success": True,
+            "customer_id": "CUST-00001",
+            "customer_name": "Alisher Navoiy",
+            "contracts": [
+                {
+                    "contract_id": "CON-2025-00245",
+                    "contract_date": "08.07.2025",
+                    "total_amount": 1116.0,
+                    "paid": 300.0,
+                    "remaining": 816.0,
+                    "payments": [
+                        {
+                            "payment_id": "PE-00001",
+                            "date": "10.07.2025",
+                            "amount": 300.0,
+                            "method": "Naqd",
+                            "remarks": "Dastlabki to'lov"
+                        }
+                    ],
+                    "total_payments": 1
+                }
+            ],
+            "total_contracts": 1,
+            "message": "To'lovlar tarixi yuklandi"
+        }
+    """
+    return await erp_request(
+        method="GET",
+        endpoint="/api/method/cash_flow_app.cash_flow_management.api.telegram_bot_api.get_payment_history_by_telegram_id",
+        params={"telegram_id": str(telegram_id)}
+    )
+
+
+async def erp_get_my_contracts_by_telegram_id(telegram_id: int) -> Dict[str, Any]:
+    """
+    Telegram ID orqali customerning barcha shartnomalarini olish.
+
+    Bu endpoint "Mening shartnomalarim" button bosilganda ishlatiladi.
+
+    Qanday ishlaydi:
+    ----------------
+    1. Telegram ID orqali customerni topadi
+    2. get_customer_contracts_detailed() ni chaqiradi
+    3. Batafsil shartnoma ma'lumotlarini qaytaradi (mahsulotlar, to'lovlar, keyingi to'lov)
+
+    Args:
+        telegram_id: Telegram user ID
+
+    Returns:
+        {
+            "success": True,
+            "customer_id": "CUST-00001",
+            "customer_name": "Alisher Navoiy",
+            "contracts": [
+                {
+                    "contract_id": "CON-2025-00245",
+                    "contract_date": "08.07.2025",
+                    "total_amount": 1116.0,
+                    "downpayment": 300.0,
+                    "paid": 300.0,
+                    "remaining": 816.0,
+                    "products": [
+                        {
+                            "name": "iPhone 15 Pro Max 256GB",
+                            "qty": 1,
+                            "price": 1116.0,
+                            "imei": "123456789",
+                            "notes": ""
+                        }
+                    ],
+                    "payments_history": [
+                        {
+                            "date": "10.07.2025",
+                            "amount": 300.0,
+                            "method": "Naqd",
+                            "payment_id": "PE-00001"
+                        }
+                    ],
+                    "next_payment": {
+                        "due_date": "08.08.2025",
+                        "amount": 100.0,
+                        "days_left": 25,
+                        "status": "upcoming",
+                        "status_uz": "25 kun qoldi"
+                    },
+                    "total_payments": 1
+                }
+            ],
+            "total_contracts": 1
+        }
+    """
+    return await erp_request(
+        method="GET",
+        endpoint="/api/method/cash_flow_app.cash_flow_management.api.telegram_bot_api.get_my_contracts_by_telegram_id",
+        params={"telegram_id": str(telegram_id)}
+    )
+
 
 async def erp_get_upcoming_payments(customer_id: str) -> Dict[str, Any]:
     """
