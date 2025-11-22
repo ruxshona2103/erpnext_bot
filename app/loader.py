@@ -81,7 +81,7 @@ async def on_startup():
     ---------
     1. Barcha handler'larni register qilish
     2. Redis connection tekshirish
-    3. ERPNext health check (optional)
+    3. Reminders scheduler'ni ishga tushirish (YANGI!)
     4. Logging
     """
     # Barcha handler'larni dispatcher'ga ulash
@@ -97,6 +97,16 @@ async def on_startup():
         logger.warning("⚠️ Bot ishlamaydi! Redis'ni ishga tushiring:")
         logger.warning("   sudo systemctl start redis")
         raise
+
+    # ✅ YANGI: Reminders scheduler'ni ishga tushirish
+    try:
+        from app.services.reminders import start_reminders_scheduler
+        await start_reminders_scheduler(bot)
+        logger.success("✅ Reminders scheduler started!")
+    except Exception as e:
+        logger.error(f"❌ Reminders scheduler failed: {e}")
+        logger.warning("⚠️ Reminders ishlamaydi, lekin bot davom etadi")
+        # Don't raise - bot should work even if reminders fail
 
     logger.success("🚀 Webhook bot ishga tushdi!")
     logger.info(f"📡 ERPNext Base URL: {config.erp.base_url}")
