@@ -811,14 +811,10 @@ def format_detailed_payment_history(
 
                 name = product.get("name") or "Noma'lum mahsulot"
                 qty = float(product.get("qty") or 0)
-                price = float(product.get("price") or 0)
-                total_price = float(product.get("total_price") or 0)
                 imei = product.get("imei") or ""
 
-                text += f"<b>{idx}. {name}</b>\n"
-                text += f"   📦 Miqdor: <b>{format_quantity(qty)}</b> dona\n"
-                text += f"   💵 Narx: {format_money(price)} so'm\n"
-                text += f"   💰 Jami: <b>{format_money(total_price)}</b> so'm\n"
+                # Faqat mahsulot nomi va miqdori ko'rsatiladi (narxsiz)
+                text += f"<b>{idx}. {name}</b> — {format_quantity(qty)} dona\n"
 
                 if imei:
                     text += f"   🔢 IMEI: <code>{imei}</code>\n"
