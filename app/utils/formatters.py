@@ -394,8 +394,10 @@ def format_payment_history(data: Dict[str, Any]) -> str:
             {
                 "payment_id": "PE-00001",
                 "date": "15.02.2025",
-                "amount": 1250000,
-                "method": "Naqd"
+                "amount": 1250000,  # Signed (negative for Pay)
+                "display_amount": 1250000,  # Unsigned for display
+                "method": "Naqd",
+                "payment_type": "Receive"  # or "Pay"
             }
         ],
         "total_payments": 5
@@ -416,8 +418,19 @@ def format_payment_history(data: Dict[str, Any]) -> str:
     text = f"💳 <b>To'lovlar tarixi</b> ({total} ta)\n\n"
 
     for payment in payments:
+        # ✅ Payment type ni aniqlash (Receive = kirim, Pay = chiqim/qaytarish)
+        payment_type = payment.get('payment_type', 'Receive')
+        display_amount = payment.get('display_amount') or abs(payment.get('amount', 0))
+
+        if payment_type == 'Pay':
+            type_emoji = "🔴"
+            type_text = "Qaytarish"
+        else:
+            type_emoji = "🟢"
+            type_text = "Kirim"
+
         text += f"📅 <b>{payment.get('date')}</b>\n"
-        text += f"   💰 Summa: <b>{format_money(payment.get('amount'))}</b> so'm\n"
+        text += f"   {type_emoji} <b>{format_money(display_amount)}</b> so'm ({type_text})\n"
         text += f"   🏦 Usul: {payment.get('method', 'Naqd')}\n"
         text += f"   🆔 ID: <code>{payment.get('payment_id')}</code>\n\n"
 
@@ -526,8 +539,19 @@ def format_payment_history_with_products(data: Dict[str, Any]) -> str:
             text += "━━━━━━━━━━━━━━━━━━━━\n\n"
 
             for idx, payment in enumerate(payments, 1):
+                # ✅ Payment type ni aniqlash (Receive = kirim, Pay = chiqim/qaytarish)
+                payment_type = payment.get('payment_type', 'Receive')
+                display_amount = payment.get('display_amount') or abs(payment.get('amount', 0))
+
+                if payment_type == 'Pay':
+                    type_emoji = "🔴"
+                    type_text = "Qaytarish"
+                else:
+                    type_emoji = "🟢"
+                    type_text = "Kirim"
+
                 text += f"<b>{idx}. {payment.get('date')}</b>\n"
-                text += f"   💰 Summa: <b>{format_money(payment.get('amount'))}</b> so'm\n"
+                text += f"   {type_emoji} <b>{format_money(display_amount)}</b> so'm ({type_text})\n"
                 text += f"   🏦 Usul: {payment.get('method', 'Naqd')}\n"
 
                 if payment.get('payment_id'):
@@ -914,16 +938,28 @@ def format_detailed_payment_history(
                 method = payment.get("method") or "Naqd"
                 payment_id = payment.get("payment_id") or ""
 
+                # ✅ Payment type ni aniqlash (Receive = kirim, Pay = chiqim/qaytarish)
+                payment_type = payment.get('payment_type', 'Receive')
+                display_amount = payment.get('display_amount') or abs(amount)
+
+                if payment_type == 'Pay':
+                    type_emoji = "🔴"
+                    type_text = "Qaytarish"
+                else:
+                    type_emoji = "🟢"
+                    type_text = "Kirim"
+
+                # ✅ Jami hisoblashda signed amount ishlatiladi
                 total_paid_sum += amount
 
                 text += f"{idx}. <b>{date}</b>\n"
-                text += f"   💰 {format_money(amount)} so'm | {method}\n"
+                text += f"   {type_emoji} {format_money(display_amount)} so'm ({type_text}) | {method}\n"
 
                 if payment_id:
                     text += f"   🆔 <code>{payment_id}</code>\n"
 
-            # Jami to'langan
-            text += f"\n📊 <b>Jami to'langan:</b> {format_money(total_paid_sum)} so'm\n"
+            # Jami to'langan (net summa)
+            text += f"\n📊 <b>Jami to'langan (sof):</b> {format_money(total_paid_sum)} so'm\n"
 
         else:
             text += "\n━━━━━━━━━━━━━━━━━━━━\n"
