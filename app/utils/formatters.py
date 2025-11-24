@@ -847,68 +847,9 @@ def format_detailed_payment_history(
                     text += "\n"
 
         # ============================================
-        # TO'LOV JADVALI (OYLAR BO'YICHA)
+        # TO'LOVLAR TARIXI (SODDALASHTIRILGAN)
         # ============================================
-        schedule = schedule_data.get("schedule") or []
-        total_months = len(schedule) if schedule else 0
-
-        if schedule and isinstance(schedule, list) and len(schedule) > 0:
-            # Xavfsiz filter qilish
-            paid_months = [s for s in schedule if isinstance(s, dict) and s.get("status") == "paid"]
-            partial_months = [s for s in schedule if isinstance(s, dict) and s.get("status") == "partial"]
-            unpaid_months = [s for s in schedule if isinstance(s, dict) and s.get("status") in ("unpaid", "pending", None)]
-            overdue_months = [s for s in schedule if isinstance(s, dict) and s.get("is_overdue")]
-
-            text += "\n━━━━━━━━━━━━━━━━━━━━\n"
-            text += f"📅 <b>TO'LOV JADVALI</b> ({total_months} oylik)\n"
-            text += "━━━━━━━━━━━━━━━━━━━━\n\n"
-
-            # Umumiy statistika
-            text += f"✅ To'langan oylar: <b>{len(paid_months)}</b> ta\n"
-            if partial_months:
-                text += f"⚠️ Qisman to'langan: <b>{len(partial_months)}</b> ta\n"
-            text += f"⏳ Qolgan oylar: <b>{len(unpaid_months)}</b> ta\n"
-            if overdue_months:
-                text += f"❌ Kechikkan: <b>{len(overdue_months)}</b> ta\n"
-
-            text += "\n<b>Oylar tafsiloti:</b>\n\n"
-
-            # Har bir oy uchun
-            for month in schedule:
-                if not isinstance(month, dict):
-                    continue
-
-                month_num = month.get("month") or 0
-                due_date = month.get("due_date") or "—"
-                amount = float(month.get("amount") or 0)
-                month_paid = float(month.get("paid") or 0)
-                outstanding = float(month.get("outstanding") or 0)
-                status = month.get("status") or "pending"
-                is_overdue = month.get("is_overdue", False)
-
-                # Status emoji
-                if status == "paid":
-                    emoji = "✅"
-                    status_text = "To'langan"
-                elif status == "partial":
-                    emoji = "⚠️"
-                    status_text = f"Qisman ({format_money(month_paid)} so'm)"
-                elif is_overdue:
-                    emoji = "❌"
-                    status_text = "Kechikkan!"
-                else:
-                    emoji = "⏳"
-                    status_text = "Kutilmoqda"
-
-                text += f"{emoji} <b>{month_num}-oy</b> | {due_date}\n"
-                text += f"   💵 {format_money(amount)} so'm — {status_text}\n"
-
-                if outstanding > 0 and status != "paid":
-                    text += f"   📉 Qoldiq: {format_money(outstanding)} so'm\n"
-
-        # ============================================
-        # TO'LOVLAR TARIXI
-        # ============================================
+        # NOTE: To'lov jadvali olib tashlandi - "Mening shartnomalarim" da ko'rsatiladi
         payments = payment_history_data.get("payments") or []
         total_payments = payment_history_data.get("total_payments") or len(payments)
 
@@ -917,49 +858,53 @@ def format_detailed_payment_history(
             text += f"💳 <b>TO'LOVLAR TARIXI</b> ({total_payments} ta)\n"
             text += "━━━━━━━━━━━━━━━━━━━━\n\n"
 
-            # Oxirgi to'lov
-            last_payment = payments[0] if payments else None
-            if last_payment and isinstance(last_payment, dict):
-                text += f"🕐 <b>Oxirgi to'lov:</b>\n"
-                text += f"   📅 Sana: <b>{last_payment.get('date') or '—'}</b>\n"
-                text += f"   💰 Summa: <b>{format_money(last_payment.get('amount') or 0)}</b> so'm\n"
-                text += f"   🏦 Usul: {last_payment.get('method') or 'Naqd'}\n\n"
+            # To'lovlarni sanasi bo'yicha tartiblash (eskidan yangiga)
+            sorted_payments = sorted(
+                [p for p in payments if isinstance(p, dict)],
+                key=lambda x: x.get("date", ""),
+                reverse=False  # Eskidan yangiga
+            )
 
-            # Barcha to'lovlar ro'yxati
-            text += "<b>Barcha to'lovlar:</b>\n\n"
+            # Running balance hisoblash
+            running_paid = 0.0
+            running_remaining = total_amount
 
-            total_paid_sum = 0
-            for idx, payment in enumerate(payments, 1):
-                if not isinstance(payment, dict):
-                    continue
-
+            for idx, payment in enumerate(sorted_payments, 1):
                 date = payment.get("date") or "—"
                 amount = float(payment.get("amount") or 0)
                 method = payment.get("method") or "Naqd"
                 payment_id = payment.get("payment_id") or ""
 
-                # ✅ Payment type ni aniqlash (Receive = kirim, Pay = chiqim/qaytarish)
                 payment_type = payment.get('payment_type', 'Receive')
                 display_amount = payment.get('display_amount') or abs(amount)
 
                 if payment_type == 'Pay':
+                    # Customerga pul qaytarildi
                     type_emoji = "🔴"
-                    type_text = "Qaytarish"
+                    type_label = "Qaytarildi"
+                    running_paid -= abs(display_amount)
+                    running_remaining += abs(display_amount)
                 else:
+                    # Customer to'lov qildi
                     type_emoji = "🟢"
-                    type_text = "Kirim"
+                    type_label = "To'landi"
+                    running_paid += display_amount
+                    running_remaining -= display_amount
 
-                # ✅ Jami hisoblashda signed amount ishlatiladi
-                total_paid_sum += amount
+                running_remaining = max(0, running_remaining)
 
-                text += f"{idx}. <b>{date}</b>\n"
-                text += f"   {type_emoji} {format_money(display_amount)} so'm ({type_text}) | {method}\n"
+                text += f"<b>{idx}. 📅 {date}</b>\n"
+                text += f"   {type_emoji} <b>{format_money(display_amount)}</b> so'm — {type_label}\n"
+                text += f"   🏦 {method} | 📊 Qoldiq: <b>{format_money(running_remaining)}</b> so'm\n"
 
                 if payment_id:
                     text += f"   🆔 <code>{payment_id}</code>\n"
 
-            # Jami to'langan (net summa)
-            text += f"\n📊 <b>Jami to'langan (sof):</b> {format_money(total_paid_sum)} so'm\n"
+                text += "\n"
+
+            text += "━━━━━━━━━━━━━━━━━━━━\n"
+            text += f"📊 <b>Jami to'langan:</b> {format_money(running_paid)} so'm\n"
+            text += f"📉 <b>Hozirgi qoldiq:</b> {format_money(remaining)} so'm\n"
 
         else:
             text += "\n━━━━━━━━━━━━━━━━━━━━\n"

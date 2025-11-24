@@ -4,10 +4,11 @@ from aiogram.fsm.context import FSMContext
 
 from app.services.erpnext_api import (
     erp_get_customer_by_passport,
-    erp_get_contract_details
+    erp_get_contract_details,
+    erp_get_payment_schedule,  # ✅ YANGI: To'lov jadvali uchun
 )
 from app.utils.keyboard import main_menu_keyboard, contract_list_keyboard
-from app.utils.formatters import format_contract_details
+from app.utils.formatters import format_contract_details, format_money
 from app.states.user_states import ContractState, PassportState
 
 router = Router()
@@ -75,7 +76,9 @@ async def contract_menu(msg: Message, state: FSMContext):
         await state.clear()
         return
 
-    # ✅ YANGI: Batafsil shartnomalarni formatlab ko'rsatish (mahsulotlar bilan)
+    # ✅ YANGI: Batafsil shartnomalarni formatlab ko'rsatish (mahsulotlar + TO'LOV JADVALI bilan)
+    import asyncio
+
     for contract in contracts:
         contract_id = contract.get("contract_id", "—")
         contract_date = contract.get("contract_date", "—")
@@ -85,42 +88,98 @@ async def contract_menu(msg: Message, state: FSMContext):
         products = contract.get("products", [])
         next_payment = contract.get("next_payment")
 
-        # Format money
-        from app.utils.formatters import format_money
+        # ✅ YANGI: To'lov jadvalini olish
+        schedule_data = await erp_get_payment_schedule(contract_id)
+        schedule = schedule_data.get("schedule", []) if schedule_data.get("success") else []
 
         # Shartnoma ma'lumotlari
-        message = f"📄 <b>SHARTNOMA: {contract_id}</b>\n\n"
-        message += f"📅 Sana: <b>{contract_date}</b>\n"
-        message += f"💰 Jami summa: <b>{format_money(total_amount)}</b> so'm\n"
+        message = f"━━━━━━━━━━━━━━━━━━━━\n"
+        message += f"📄 <b>SHARTNOMA: {contract_id}</b>\n"
+        message += f"━━━━━━━━━━━━━━━━━━━━\n\n"
+        message += f"📅 Tuzilgan sana: <b>{contract_date}</b>\n\n"
+        message += f"💰 Umumiy summa: <b>{format_money(total_amount)}</b> so'm\n"
         message += f"✅ To'langan: <b>{format_money(paid)}</b> so'm\n"
-        message += f"📉 Qoldiq: <b>{format_money(remaining)}</b> so'm\n\n"
+        message += f"📉 Qoldiq: <b>{format_money(remaining)}</b> so'm\n"
+
+        # To'lov foizi
+        if total_amount > 0:
+            percentage = (paid / total_amount) * 100
+            message += f"📊 To'lov foizi: <b>{percentage:.1f}%</b>\n"
 
         # ✅ MAHSULOTLAR
         if products:
-            message += f"🛍 <b>MAHSULOTLAR ({len(products)} ta):</b>\n"
+            message += f"\n━━━━━━━━━━━━━━━━━━━━\n"
+            message += f"🛍 <b>MAHSULOTLAR ({len(products)} ta)</b>\n"
+            message += f"━━━━━━━━━━━━━━━━━━━━\n\n"
             for i, p in enumerate(products, 1):
                 p_name = p.get("name", "—")
                 p_qty = p.get("qty", 0)
-                p_price = p.get("price", 0)
                 p_imei = p.get("imei", "")
 
-                message += f"\n<b>{i}. {p_name}</b>\n"
-                message += f"   📦 Miqdor: {p_qty} dona\n"
-                message += f"   💵 Narx: {format_money(p_price)} so'm\n"
+                message += f"<b>{i}. {p_name}</b> — {p_qty} dona\n"
                 if p_imei:
                     message += f"   🔢 IMEI: <code>{p_imei}</code>\n"
 
-        # ✅ KEYINGI TO'LOV
-        if next_payment:
+        # ✅ YANGI: TO'LOV JADVALI (qaysi kunlari to'lov qilish kerak)
+        if schedule:
+            total_months = len(schedule)
+            paid_months = len([s for s in schedule if s.get("status") == "paid"])
+            overdue_months = len([s for s in schedule if s.get("is_overdue")])
+
+            message += f"\n━━━━━━━━━━━━━━━━━━━━\n"
+            message += f"📅 <b>TO'LOV JADVALI ({total_months} oylik)</b>\n"
+            message += f"━━━━━━━━━━━━━━━━━━━━\n\n"
+
+            message += f"✅ To'langan oylar: <b>{paid_months}</b> ta\n"
+            message += f"⏳ Qolgan oylar: <b>{total_months - paid_months}</b> ta\n"
+            if overdue_months > 0:
+                message += f"❌ Kechikkan: <b>{overdue_months}</b> ta\n"
+
+            message += f"\n<b>Oylar tafsiloti:</b>\n\n"
+
+            for month in schedule:
+                month_num = month.get("month", 0)
+                due_date = month.get("due_date", "—")
+                amount = month.get("amount", 0)
+                month_paid = month.get("paid", 0)
+                outstanding = month.get("outstanding", 0)
+                status = month.get("status", "pending")
+                is_overdue = month.get("is_overdue", False)
+
+                # Status emoji va text
+                if status == "paid":
+                    emoji = "✅"
+                    status_text = "To'langan"
+                elif status == "partial":
+                    emoji = "⚠️"
+                    status_text = f"Qisman ({format_money(month_paid)} so'm)"
+                elif is_overdue:
+                    emoji = "❌"
+                    status_text = "Kechikkan!"
+                else:
+                    emoji = "⏳"
+                    status_text = "Kutilmoqda"
+
+                message += f"{emoji} <b>{month_num}-oy</b> | {due_date}\n"
+                message += f"   💵 {format_money(amount)} so'm — {status_text}\n"
+
+                if outstanding > 0 and status != "paid":
+                    message += f"   📉 Qoldiq: {format_money(outstanding)} so'm\n"
+
+        # ✅ KEYINGI TO'LOV (qisqa xulosa)
+        elif next_payment:
             message += f"\n━━━━━━━━━━━━━━━━━━━━\n"
             message += f"📅 <b>KEYINGI TO'LOV:</b>\n"
             message += f"   📆 Muddat: <b>{next_payment.get('due_date', '—')}</b>\n"
             message += f"   💰 Summa: <b>{format_money(next_payment.get('amount', 0))}</b> so'm\n"
             message += f"   ⏰ {next_payment.get('status_uz', 'Kutilmoqda')}\n"
 
+        message += f"\n━━━━━━━━━━━━━━━━━━━━"
+
         await msg.answer(
             message,
-            reply_markup=main_menu_keyboard()
+            reply_markup=main_menu_keyboard(),
+            parse_mode="HTML"
         )
 
     await state.clear()

@@ -13,6 +13,10 @@ app = FastAPI(
 
 router = APIRouter()
 
+# ✅ MUHIM: Router'ni app ga qo'shish - bu yo'q edi!
+# Bu qator yo'qligi sababli /webhook/payment-entry ishlamagan!
+app.include_router(router)
+
 
 #Healthcheck (Cloudflare / UptimeRobot uchun)
 @app.get("/")
@@ -61,31 +65,82 @@ async def shutdown_event():
     logger.success("Webhook ochirildi, muvaffaqiyatli toxtatildi!")
 
 
-@router.post("/webhook/payment-entry")
+@app.post("/webhook/payment-entry")
 async def payment_entry_webhook(request: Request):
     """
     ERPNext Payment Entry submit bo'lganda shu webhookga POST yuboradi.
+
+    ERPNext dan keladigan ma'lumotlar:
+    - name: Payment Entry ID (PE-00001)
+    - party: Customer ID
+    - custom_contract_reference: Shartnoma ID
+    - paid_amount: To'lov summasi
+    - custom_telegram_id: Telegram chat ID
+    - posting_date: To'lov sanasi (optional)
+    - mode_of_payment: To'lov usuli (optional)
     """
-    data = await request.json()
+    try:
+        data = await request.json()
 
-    # ERPNext webhook JSON tarkibi
-    pe_name = data.get("name")
-    customer = data.get("party")
-    contract = data.get("custom_contract_reference")
-    amount = data.get("paid_amount")
-    telegram_id = data.get("custom_telegram_id")
+        # ✅ Debug: Kelgan ma'lumotlarni log qilish
+        logger.info(f"📥 Payment webhook received: {data}")
 
-    if not telegram_id:
-        return {"error": "Customer has no telegram_id"}
+        # ERPNext webhook JSON tarkibi
+        pe_name = data.get("name", "—")
+        customer = data.get("party", "—")
+        contract = data.get("custom_contract_reference", "—")
+        amount = data.get("paid_amount", 0)
+        telegram_id = data.get("custom_telegram_id")
+        posting_date = data.get("posting_date", "")
+        payment_method = data.get("mode_of_payment", "Naqd")
 
-    msg = (
-        f"💰 <b>To‘lov qabul qilindi!</b>\n\n"
-        f"📄 Shartnoma: <b>{contract}</b>\n"
-        f"💵 Summa: <b>{amount:,}</b> so‘m\n"
-        f"🧾 To'lov ID: <b>{pe_name}</b>\n\n"
-        f"Rahmat! 🙏"
-    )
+        # ✅ Telegram ID tekshirish
+        if not telegram_id:
+            logger.warning(f"⚠️ Payment {pe_name}: Customer {customer} has no telegram_id")
+            return JSONResponse(
+                status_code=200,
+                content={"status": "skipped", "reason": "no_telegram_id"}
+            )
 
-    await bot.send_message(chat_id=telegram_id, text=msg)
+        # ✅ Summa formatlash
+        try:
+            amount_formatted = f"{float(amount):,.0f}"
+        except (ValueError, TypeError):
+            amount_formatted = str(amount)
 
-    return {"status": "ok"}
+        # ✅ Xabar tayyorlash
+        msg = (
+            f"💰 <b>To'lov qabul qilindi!</b>\n\n"
+            f"📄 Shartnoma: <code>{contract}</code>\n"
+            f"💵 Summa: <b>{amount_formatted}</b> so'm\n"
+            f"🏦 Usul: {payment_method}\n"
+            f"🧾 To'lov ID: <code>{pe_name}</code>\n"
+        )
+
+        if posting_date:
+            msg += f"📅 Sana: {posting_date}\n"
+
+        msg += f"\n✅ Rahmat! Keyingi to'lovlar uchun /start bosing."
+
+        # ✅ Telegram ga yuborish
+        await bot.send_message(
+            chat_id=telegram_id,
+            text=msg,
+            parse_mode="HTML"
+        )
+
+        logger.success(f"✅ Payment notification sent to {telegram_id} for {pe_name}")
+
+        return JSONResponse(
+            status_code=200,
+            content={"status": "ok", "telegram_id": telegram_id, "payment": pe_name}
+        )
+
+    except Exception as e:
+        logger.error(f"❌ Payment webhook error: {e}")
+        logger.exception("Full traceback:")
+
+        return JSONResponse(
+            status_code=500,
+            content={"status": "error", "message": str(e)}
+        )
