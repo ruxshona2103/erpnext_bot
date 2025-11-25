@@ -7,7 +7,6 @@ load_dotenv()
 class TelegramConfig(BaseModel):
     bot_token: str = Field(..., alias="BOT_TOKEN")
     bot_name: str = Field(..., alias="BOT_NAME")
-    # webhookni sozlash jarayonida ishlatamiz
     webhook_url: str|None = Field(None, alias='WEBHOOK_URL')
     webhook_path: str|None = Field(None, alias="WEBHOOK_PATH")
 
