@@ -211,9 +211,9 @@ def format_customer_profile(data: Dict[str, Any]) -> str:
             text += "━━━━━━━━━━━━━━━━━━━━\n\n"
 
             text += f"📄 <b>Jami shartnomalar:</b> {len(contracts)} ta\n"
-            text += f"💰 <b>Umumiy summa:</b> {format_money(total_amount)} so'm\n"
-            text += f"✅ <b>To'langan:</b> {format_money(total_paid)} so'm\n"
-            text += f"📉 <b>Qolgan qarz:</b> {format_money(total_remaining)} so'm\n"
+            text += f"💰 <b>Umumiy summa:</b> ${format_money(total_amount)}\n"
+            text += f"✅ <b>To'langan:</b> ${format_money(total_paid)}\n"
+            text += f"📉 <b>Qolgan qarz:</b> ${format_money(total_remaining)}\n"
         else:
             text += "\n━━━━━━━━━━━━━━━━━━━━\n"
             text += "📄 <b>SHARTNOMALAR</b>\n"
@@ -238,7 +238,7 @@ def format_customer_profile(data: Dict[str, Any]) -> str:
 
                 text += f"{idx}. {status_emoji} <b>{payment.get('contract_id')}</b>\n"
                 text += f"   📅 Sana: <b>{payment.get('due_date')}</b>\n"
-                text += f"   💵 Summa: <b>{format_money(payment.get('amount'))}</b> so'm\n"
+                text += f"   💵 Summa: <b>${format_money(payment.get('amount'))}</b>\n"
                 text += f"   📊 Holat: <i>{payment.get('status_uz', payment.get('status_text', '—'))}</i>\n"
 
                 if idx < len(next_payments[:5]):
@@ -310,13 +310,13 @@ def format_contract_with_products(contract: Dict[str, Any]) -> str:
     text += "💰 <b>MOLIYAVIY MA'LUMOTLAR</b>\n"
     text += "━━━━━━━━━━━━━━━━━━━━\n\n"
 
-    text += f"💵 <b>Umumiy summa:</b> {format_money(contract.get('total_amount'))} so'm\n"
+    text += f"💵 <b>Umumiy summa:</b> ${format_money(contract.get('total_amount'))}\n"
 
     if contract.get('downpayment'):
-        text += f"💳 <b>Boshlang'ich to'lov:</b> {format_money(contract.get('downpayment'))} so'm\n"
+        text += f"💳 <b>Boshlang'ich to'lov:</b> ${format_money(contract.get('downpayment'))}\n"
 
-    text += f"✅ <b>To'langan:</b> {format_money(contract.get('paid'))} so'm\n"
-    text += f"📉 <b>Qolgan qarz:</b> {format_money(contract.get('remaining'))} so'm\n"
+    text += f"✅ <b>To'langan:</b> ${format_money(contract.get('paid'))}\n"
+    text += f"📉 <b>Qolgan qarz:</b> ${format_money(contract.get('remaining'))}\n"
 
     # Mahsulotlar ro'yxati
     products = contract.get('products', [])
@@ -328,8 +328,8 @@ def format_contract_with_products(contract: Dict[str, Any]) -> str:
         for idx, product in enumerate(products, 1):
             text += f"<b>{idx}. {product.get('name')}</b>\n"
             text += f"   📦 Miqdor: {format_quantity(product.get('qty'))} dona\n"
-            text += f"   💵 Narx: {format_money(product.get('price'))} so'm\n"
-            text += f"   💰 Jami: {format_money(product.get('total_price'))} so'm\n"
+            text += f"   💵 Narx: ${format_money(product.get('price'))}\n"
+            text += f"   💰 Jami: ${format_money(product.get('total_price'))}\n"
 
             if product.get('imei'):
                 text += f"   🔢 IMEI: <code>{product.get('imei')}</code>\n"
@@ -348,7 +348,7 @@ def format_contract_with_products(contract: Dict[str, Any]) -> str:
         text += "━━━━━━━━━━━━━━━━━━━━\n\n"
 
         text += f"📆 <b>Sana:</b> {next_payment.get('due_date')}\n"
-        text += f"💵 <b>Summa:</b> {format_money(next_payment.get('amount'))} so'm\n"
+        text += f"💵 <b>Summa:</b> ${format_money(next_payment.get('amount'))}\n"
         text += f"📊 <b>Holat:</b> <i>{next_payment.get('status_uz', next_payment.get('status_text'))}</i>\n"
 
     text += "\n━━━━━━━━━━━━━━━━━━━━"
@@ -430,8 +430,7 @@ def format_payment_history(data: Dict[str, Any]) -> str:
             type_text = "Kirim"
 
         text += f"📅 <b>{payment.get('date')}</b>\n"
-        text += f"   {type_emoji} <b>{format_money(display_amount)}</b> so'm ({type_text})\n"
-        text += f"   🏦 Usul: {payment.get('method', 'Naqd')}\n"
+        text += f"   {type_emoji} <b>${format_money(display_amount)}</b> ({type_text})\n"
         text += f"   🆔 ID: <code>{payment.get('payment_id')}</code>\n\n"
 
     return text
@@ -503,9 +502,9 @@ def format_payment_history_with_products(data: Dict[str, Any]) -> str:
         text += f"🔖 <b>Shartnoma:</b> <code>{contract.get('contract_id')}</code>\n"
         text += f"📅 <b>Sana:</b> {contract.get('contract_date')}\n\n"
 
-        text += f"💰 <b>Umumiy summa:</b> {format_money(contract.get('total_amount'))} so'm\n"
-        text += f"✅ <b>To'langan:</b> {format_money(total_paid)} so'm\n"
-        text += f"📉 <b>Qoldiq:</b> {format_money(contract.get('remaining'))} so'm\n"
+        text += f"💰 <b>Umumiy summa:</b> ${format_money(contract.get('total_amount'))}\n"
+        text += f"✅ <b>To'langan:</b> ${format_money(total_paid)}\n"
+        text += f"📉 <b>Qoldiq:</b> ${format_money(contract.get('remaining'))}\n"
 
         # ============================================
         # MAHSULOTLAR
@@ -518,8 +517,8 @@ def format_payment_history_with_products(data: Dict[str, Any]) -> str:
             for idx, product in enumerate(products, 1):
                 text += f"<b>{idx}. {product.get('name')}</b>\n"
                 text += f"   📦 Miqdor: {format_quantity(product.get('qty'))} dona\n"
-                text += f"   💵 Narx: {format_money(product.get('price'))} so'm\n"
-                text += f"   💰 Jami: {format_money(product.get('total_price'))} so'm\n"
+                text += f"   💵 Narx: ${format_money(product.get('price'))}\n"
+                text += f"   💰 Jami: ${format_money(product.get('total_price'))}\n"
 
                 if product.get('imei'):
                     text += f"   🔢 IMEI: <code>{product.get('imei')}</code>\n"
@@ -551,8 +550,7 @@ def format_payment_history_with_products(data: Dict[str, Any]) -> str:
                     type_text = "Kirim"
 
                 text += f"<b>{idx}. {payment.get('date')}</b>\n"
-                text += f"   {type_emoji} <b>{format_money(display_amount)}</b> so'm ({type_text})\n"
-                text += f"   🏦 Usul: {payment.get('method', 'Naqd')}\n"
+                text += f"   {type_emoji} <b>${format_money(display_amount)}</b> ({type_text})\n"
 
                 if payment.get('payment_id'):
                     text += f"   🆔 ID: <code>{payment.get('payment_id')}</code>\n"
@@ -612,13 +610,13 @@ def format_payment_schedule(data: Dict[str, Any]) -> str:
             emoji = "⏳"
 
         text += f"{emoji} <b>{month.get('month')}-oy</b> — {month.get('due_date')}\n"
-        text += f"   💵 To'lov: <b>{format_money(month.get('amount'))}</b> so'm\n"
+        text += f"   💵 To'lov: <b>${format_money(month.get('amount'))}</b>\n"
 
         if month.get('paid', 0) > 0:
-            text += f"   ✅ To'langan: <b>{format_money(month.get('paid'))}</b> so'm\n"
+            text += f"   ✅ To'langan: <b>${format_money(month.get('paid'))}</b>\n"
 
         if month.get('outstanding', 0) > 0:
-            text += f"   📉 Qoldiq: <b>{format_money(month.get('outstanding'))}</b> so'm\n"
+            text += f"   📉 Qoldiq: <b>${format_money(month.get('outstanding'))}</b>\n"
 
         text += f"   📊 {month.get('status_uz', status)}\n\n"
 
@@ -662,10 +660,10 @@ def format_upcoming_payments(data: Dict[str, Any]) -> str:
 
         text += f"<b>{idx}. {emoji} {payment.get('contract_id')}</b>\n"
         text += f"   📅 <b>Sana:</b> {payment.get('due_date')}\n"
-        text += f"   💰 <b>Summa:</b> {format_money(payment.get('amount'))} so'm\n"
+        text += f"   💰 <b>Summa:</b> ${format_money(payment.get('amount'))}\n"
 
         if payment.get('outstanding'):
-            text += f"   📉 <b>Qarz:</b> {format_money(payment.get('outstanding'))} so'm\n"
+            text += f"   📉 <b>Qarz:</b> ${format_money(payment.get('outstanding'))}\n"
 
         text += f"   📊 <b>Holat:</b> {status_text}\n"
 
@@ -806,11 +804,11 @@ def format_detailed_payment_history(
         text += f"🔖 <b>Shartnoma:</b> <code>{contract_id}</code>\n"
         text += f"📅 <b>Tuzilgan sana:</b> {contract_date}\n\n"
 
-        text += f"💰 <b>Umumiy summa:</b> {format_money(total_amount)} so'm\n"
+        text += f"💰 <b>Umumiy summa:</b> ${format_money(total_amount)}\n"
         if downpayment:
-            text += f"💳 <b>Boshlang'ich to'lov:</b> {format_money(downpayment)} so'm\n"
-        text += f"✅ <b>To'langan:</b> {format_money(paid_amount)} so'm\n"
-        text += f"📉 <b>Qoldiq:</b> {format_money(remaining)} so'm\n"
+            text += f"💳 <b>Boshlang'ich to'lov:</b> ${format_money(downpayment)}\n"
+        text += f"✅ <b>To'langan:</b> ${format_money(paid_amount)}\n"
+        text += f"📉 <b>Qoldiq:</b> ${format_money(remaining)}\n"
 
         # To'lov foizi
         if total_amount > 0:
@@ -894,8 +892,8 @@ def format_detailed_payment_history(
                 running_remaining = max(0, running_remaining)
 
                 text += f"<b>{idx}. 📅 {date}</b>\n"
-                text += f"   {type_emoji} <b>{format_money(display_amount)}</b> so'm — {type_label}\n"
-                text += f"   🏦 {method} | 📊 Qoldiq: <b>{format_money(running_remaining)}</b> so'm\n"
+                text += f"   {type_emoji} <b>${format_money(display_amount)}</b> — {type_label}\n"
+                text += f"   📊 Qoldiq: <b>${format_money(running_remaining)}</b>\n"
 
                 if payment_id:
                     text += f"   🆔 <code>{payment_id}</code>\n"
@@ -903,8 +901,8 @@ def format_detailed_payment_history(
                 text += "\n"
 
             text += "━━━━━━━━━━━━━━━━━━━━\n"
-            text += f"📊 <b>Jami to'langan:</b> {format_money(running_paid)} so'm\n"
-            text += f"📉 <b>Hozirgi qoldiq:</b> {format_money(remaining)} so'm\n"
+            text += f"📊 <b>Jami to'langan:</b> ${format_money(running_paid)}\n"
+            text += f"📉 <b>Hozirgi qoldiq:</b> ${format_money(remaining)}\n"
 
         else:
             text += "\n━━━━━━━━━━━━━━━━━━━━\n"
@@ -919,9 +917,9 @@ def format_detailed_payment_history(
         text += "📋 <b>XULOSA</b>\n"
         text += "━━━━━━━━━━━━━━━━━━━━\n\n"
 
-        text += f"💰 Umumiy summa: <b>{format_money(total_amount)}</b> so'm\n"
-        text += f"✅ To'langan: <b>{format_money(paid_amount)}</b> so'm\n"
-        text += f"📉 Qolgan qarz: <b>{format_money(remaining)}</b> so'm\n"
+        text += f"💰 Umumiy summa: <b>${format_money(total_amount)}</b>\n"
+        text += f"✅ To'langan: <b>${format_money(paid_amount)}</b>\n"
+        text += f"📉 Qolgan qarz: <b>${format_money(remaining)}</b>\n"
 
         # Muddat ma'lumotlari
         final_schedule = schedule_data.get("schedule") or []
