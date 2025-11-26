@@ -60,11 +60,9 @@ def format_phone(phone: Any) -> str:
     if len(digits) == 12 and digits.startswith('998'):
         return f"+{digits[:3]} {digits[3:5]} {digits[5:8]} {digits[8:10]} {digits[10:]}"
 
-    # Agar 9 raqam bo'lsa (901234567) - 998 qo'shamiz
     if len(digits) == 9:
         return f"+998 {digits[:2]} {digits[2:5]} {digits[5:7]} {digits[7:]}"
 
-    # Boshqa format bo'lsa - shunchaki qaytaramiz (noto'g'ri format deb hisoblaymiz)
     if digits:
         return f"<code>{phone}</code>"  # Asl formatda ko'rsatish
 
