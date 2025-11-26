@@ -97,9 +97,9 @@ async def contract_menu(msg: Message, state: FSMContext):
         message += f"📄 <b>SHARTNOMA: {contract_id}</b>\n"
         message += f"━━━━━━━━━━━━━━━━━━━━\n\n"
         message += f"📅 Tuzilgan sana: <b>{contract_date}</b>\n\n"
-        message += f"💰 Umumiy summa: <b>{format_money(total_amount)}</b> so'm\n"
-        message += f"✅ To'langan: <b>{format_money(paid)}</b> so'm\n"
-        message += f"📉 Qoldiq: <b>{format_money(remaining)}</b> so'm\n"
+        message += f"💰 Umumiy summa: <b>${format_money(total_amount)}</b>\n"
+        message += f"✅ To'langan: <b>${format_money(paid)}</b>\n"
+        message += f"📉 Qoldiq: <b>${format_money(remaining)}</b>\n"
 
         # To'lov foizi
         if total_amount > 0:
@@ -152,7 +152,7 @@ async def contract_menu(msg: Message, state: FSMContext):
                     status_text = "To'langan"
                 elif status == "partial":
                     emoji = "⚠️"
-                    status_text = f"Qisman ({format_money(month_paid)} so'm)"
+                    status_text = f"Qisman (${format_money(month_paid)})"
                 elif is_overdue:
                     emoji = "❌"
                     status_text = "Kechikkan!"
@@ -161,17 +161,17 @@ async def contract_menu(msg: Message, state: FSMContext):
                     status_text = "Kutilmoqda"
 
                 message += f"{emoji} <b>{month_num}-oy</b> | {due_date}\n"
-                message += f"   💵 {format_money(amount)} so'm — {status_text}\n"
+                message += f"   💵 ${format_money(amount)} — {status_text}\n"
 
                 if outstanding > 0 and status != "paid":
-                    message += f"   📉 Qoldiq: {format_money(outstanding)} so'm\n"
+                    message += f"   📉 Qoldiq: ${format_money(outstanding)}\n"
 
         # ✅ KEYINGI TO'LOV (qisqa xulosa)
         elif next_payment:
             message += f"\n━━━━━━━━━━━━━━━━━━━━\n"
             message += f"📅 <b>KEYINGI TO'LOV:</b>\n"
             message += f"   📆 Muddat: <b>{next_payment.get('due_date', '—')}</b>\n"
-            message += f"   💰 Summa: <b>{format_money(next_payment.get('amount', 0))}</b> so'm\n"
+            message += f"   💰 Summa: <b>${format_money(next_payment.get('amount', 0))}</b>\n"
             message += f"   ⏰ {next_payment.get('status_uz', 'Kutilmoqda')}\n"
 
         message += f"\n━━━━━━━━━━━━━━━━━━━━"

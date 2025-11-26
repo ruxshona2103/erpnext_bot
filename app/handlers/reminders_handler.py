@@ -135,11 +135,11 @@ async def show_reminders(msg: Message, state: FSMContext):
                     message += f"      • ... va yana {len(products) - 2} ta\n"
 
             message += f"   📅 To'lov sanasi: <b>{due_date}</b>\n"
-            message += f"   💰 To'lov summasi: <b>{format_money(amount)}</b> so'm\n"
+            message += f"   💰 To'lov summasi: <b>${format_money(amount)}</b>\n"
 
             # Agar qoldiq bor bo'lsa
             if outstanding > 0:
-                message += f"   📊 Qoldiq: <b>{format_money(outstanding)}</b> so'm\n"
+                message += f"   📊 Qoldiq: <b>${format_money(outstanding)}</b>\n"
 
             # Status
             message += f"   ⏰ {status_uz}\n"

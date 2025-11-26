@@ -66,7 +66,7 @@ def get_reminder_template(reminder_type: str, payment_data: Dict[str, Any]) -> s
             f"Sizning to'lovingiz 5 kundan keyin!\n\n"
             f"🔖 Shartnoma: <code>{contract_id}</code>\n"
             f"📆 Sana: <b>{due_date}</b>\n"
-            f"💰 Summa: <b>{amount_formatted}</b> so'm\n\n"
+            f"💰 Summa: <b>${amount_formatted}</b>\n\n"
             f"Iltimos, to'lovni vaqtida amalga oshiring."
         ),
         "3_days_before": (
@@ -74,7 +74,7 @@ def get_reminder_template(reminder_type: str, payment_data: Dict[str, Any]) -> s
             f"Sizning to'lovingiz <b>3 kundan keyin!</b>\n\n"
             f"🔖 Shartnoma: <code>{contract_id}</code>\n"
             f"📆 Sana: <b>{due_date}</b>\n"
-            f"💰 Summa: <b>{amount_formatted}</b> so'm\n\n"
+            f"💰 Summa: <b>${amount_formatted}</b>\n\n"
             f"To'lovni tayyorlab qo'ying!"
         ),
         "1_day_before": (
@@ -82,7 +82,7 @@ def get_reminder_template(reminder_type: str, payment_data: Dict[str, Any]) -> s
             f"Sizning to'lovingiz <b>ERTAGA!</b>\n\n"
             f"🔖 Shartnoma: <code>{contract_id}</code>\n"
             f"📆 Sana: <b>{due_date}</b>\n"
-            f"💰 Summa: <b>{amount_formatted}</b> so'm\n\n"
+            f"💰 Summa: <b>${amount_formatted}</b>\n\n"
             f"Iltimos, ertaga to'lovni amalga oshiring."
         ),
         "today": (
@@ -90,7 +90,7 @@ def get_reminder_template(reminder_type: str, payment_data: Dict[str, Any]) -> s
             f"Sizning to'lovingiz <b>BUGUN!</b>\n\n"
             f"🔖 Shartnoma: <code>{contract_id}</code>\n"
             f"📆 Sana: <b>{due_date}</b>\n"
-            f"💰 Summa: <b>{amount_formatted}</b> so'm\n\n"
+            f"💰 Summa: <b>${amount_formatted}</b>\n\n"
             f"Iltimos, bugun to'lovni amalga oshiring."
         ),
         "1_day_overdue": (
@@ -98,7 +98,7 @@ def get_reminder_template(reminder_type: str, payment_data: Dict[str, Any]) -> s
             f"Sizning to'lovingiz <b>1 kun kechikdi!</b>\n\n"
             f"🔖 Shartnoma: <code>{contract_id}</code>\n"
             f"📆 To'lov kuni edi: <b>{due_date}</b>\n"
-            f"💰 Summa: <b>{amount_formatted}</b> so'm\n\n"
+            f"💰 Summa: <b>${amount_formatted}</b>\n\n"
             f"Iltimos, imkon qadar tezroq to'lovni amalga oshiring."
         ),
         "3_days_overdue": (
@@ -106,7 +106,7 @@ def get_reminder_template(reminder_type: str, payment_data: Dict[str, Any]) -> s
             f"Sizning to'lovingiz <b>3 kun kechikdi!</b>\n\n"
             f"🔖 Shartnoma: <code>{contract_id}</code>\n"
             f"📆 To'lov kuni edi: <b>{due_date}</b>\n"
-            f"💰 Summa: <b>{amount_formatted}</b> so'm\n\n"
+            f"💰 Summa: <b>${amount_formatted}</b>\n\n"
             f"⚠️ Iltimos, to'lovni ZUDLIK bilan amalga oshiring!\n"
             f"Aks holda qarz yig'iladi."
         ),
@@ -115,7 +115,7 @@ def get_reminder_template(reminder_type: str, payment_data: Dict[str, Any]) -> s
             f"Sizning to'lovingiz <b>7 kun kechikdi!</b>\n\n"
             f"🔖 Shartnoma: <code>{contract_id}</code>\n"
             f"📆 To'lov kuni edi: <b>{due_date}</b>\n"
-            f"💰 Summa: <b>{amount_formatted}</b> so'm\n\n"
+            f"💰 Summa: <b>${amount_formatted}</b>\n\n"
             f"🚨 <b>DIQQAT!</b> To'lovni zudlik bilan amalga oshiring!\n"
             f"Aks holda shartnoma to'xtatilishi mumkin.\n\n"
             f"Iltimos, biz bilan bog'laning:\n"

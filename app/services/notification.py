@@ -53,7 +53,7 @@ async def notification_worker():
                         chat_id,
                         f"📅 3 kundan keyin to'lov kuni!\n\n"
                         f"Shartnoma: <b>{so['name']}</b>\n"
-                        f"To'lov summasi: <b>{so['next_payment_amount']:,}</b> so'm\n"
+                        f"To'lov summasi: <b>${so['next_payment_amount']:,}</b>\n"
                         f"🕒 Iltimos o'z vaqtida to'lang."
                     )
 
@@ -63,7 +63,7 @@ async def notification_worker():
                         chat_id,
                         f"📅 Ertaga to'lov kuni!\n\n"
                         f"Shartnoma: <b>{so['name']}</b>\n"
-                        f"Summa: <b>{so['next_payment_amount']:,}</b> so'm"
+                        f"Summa: <b>${so['next_payment_amount']:,}</b>"
                     )
 
                 # === BUGUN ===
