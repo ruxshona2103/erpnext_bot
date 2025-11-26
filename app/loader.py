@@ -130,17 +130,6 @@ async def on_startup():
 
 
 async def on_shutdown():
-    """
-    Application shutdown handler.
-
-    Server to'xtatilganda barcha resurslarni tozalash.
-
-    Cleanup:
-    --------
-    1. Redis connection yopish
-    2. Bot session yopish
-    3. HTTP client yopish (erpnext_api.py'dan)
-    """
     logger.warning("🛑 Bot to'xtatilmoqda...")
 
     # Redis connection yopish
