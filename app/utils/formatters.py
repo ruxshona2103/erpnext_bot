@@ -1,25 +1,3 @@
-"""
-Message Formatters for Telegram Bot
-
-Bu modul ERPNext API dan kelgan ma'lumotlarni Telegram uchun
-chiroyli formatda ko'rsatadi.
-
-ERPNext API Structure bilan to'liq mos:
----------------------------------------
-- Customer info
-- Contract details with products
-- Payment history
-- Payment schedule
-- Upcoming payments
-
-Best Practices:
----------------
-- HTML formatlash ishlatilgan (<b>, <i>, <code>)
-- Raqamlar 1,000,000 formatda
-- Sanalar dd.MM.yyyy formatda
-- Emoji ishlatilgan (😊 user-friendly)
-"""
-
 from typing import Dict, List, Any, Optional
 
 
@@ -28,15 +6,6 @@ from typing import Dict, List, Any, Optional
 # ============================================================================
 
 def format_money(amount: Any) -> str:
-    """
-    Pul summalarini formatlash: 1234567 → 1,234,567
-
-    Args:
-        amount: Pul summasi (int, float, str, None)
-
-    Returns:
-        Formatlangan string
-    """
     try:
         if amount is None or amount == "":
             return "0"
