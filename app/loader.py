@@ -108,9 +108,25 @@ async def on_startup():
         logger.warning("⚠️ Reminders ishlamaydi, lekin bot davom etadi")
         # Don't raise - bot should work even if reminders fail
 
+    # Git commit hash'ni olish
+    try:
+        import subprocess
+        git_commit = subprocess.check_output(
+            ['git', 'rev-parse', '--short', 'HEAD'],
+            cwd='/home/user/Documents/erpnext_bot'
+        ).decode('utf-8').strip()
+        git_branch = subprocess.check_output(
+            ['git', 'branch', '--show-current'],
+            cwd='/home/user/Documents/erpnext_bot'
+        ).decode('utf-8').strip()
+    except Exception:
+        git_commit = "unknown"
+        git_branch = "unknown"
+
     logger.success("🚀 Webhook bot ishga tushdi!")
     logger.info(f"📡 ERPNext Base URL: {config.erp.base_url}")
     logger.info(f"💾 Redis: {config.redis.host}:{config.redis.port}/{config.redis.db}")
+    logger.info(f"🏷️  Version: {git_branch}@{git_commit}")
 
 
 async def on_shutdown():
