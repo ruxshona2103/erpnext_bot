@@ -92,9 +92,19 @@ if [ ! -f ".env" ]; then
     exit 1
 fi
 
-# Source .env to get variables
+# Source .env to get variables (with error handling)
 set -a
-source .env
+if ! source .env 2>/dev/null; then
+    echo -e "${RED}❌ .env file has syntax errors!${NC}"
+    echo -e "${YELLOW}Common issues:${NC}"
+    echo "  • Values with spaces must be quoted: VAR=\"value with spaces\""
+    echo "  • No spaces around '=' sign"
+    echo "  • Check line with error above"
+    echo ""
+    echo -e "${YELLOW}Checking .env syntax...${NC}"
+    bash -n .env 2>&1 || true
+    exit 1
+fi
 set +a
 
 # Validate critical variables
