@@ -108,6 +108,20 @@ async def on_startup():
         logger.warning("⚠️ Reminders ishlamaydi, lekin bot davom etadi")
         # Don't raise - bot should work even if reminders fail
 
+    # ✅ YANGI: Support contact'ni yuklash (ERPNext'dan operator telefon raqami)
+    try:
+        from app.services.support import load_support_contact
+        result = await load_support_contact()
+        if result.get("success"):
+            contact = result["contact"]
+            logger.success(f"✅ Support contact loaded: {contact.get('name')} - {contact.get('phone')}")
+        else:
+            logger.warning("⚠️ Support contact not loaded, using config fallback")
+    except Exception as e:
+        logger.error(f"❌ Support contact loading failed: {e}")
+        logger.warning("⚠️ Using config fallback for support contact")
+        # Don't raise - bot should work even if support contact fails
+
     # Git commit hash'ni olish
     try:
         import subprocess

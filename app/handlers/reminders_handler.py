@@ -27,6 +27,7 @@ from loguru import logger
 from app.utils.keyboard import main_menu_keyboard
 from app.utils.formatters import format_money
 from app.services.erpnext_api import erp_get_reminders_by_telegram_id
+from app.services.support import get_support_contact
 
 
 router = Router()
@@ -167,10 +168,14 @@ async def show_reminders(msg: Message, state: FSMContext):
         logger.error(f"Reminders handler error for {telegram_id}: {e}")
         logger.exception("Full traceback:")
 
+        # Operator telefon raqamini olish
+        support = await get_support_contact()
+
         await msg.answer(
             "❌ <b>Xatolik yuz berdi</b>\n\n"
             "Eslatmalarni yuklashda muammo bo'ldi. Iltimos, biroz kutib qaytadan urinib ko'ring.\n\n"
-            "Agar muammo davom etsa, administratorga murojaat qiling.",
+            f"Agar muammo davom etsa, {support['name']}'ga murojaat qiling:\n"
+            f"📞 {support['phone']}",
             reply_markup=main_menu_keyboard()
         )
 

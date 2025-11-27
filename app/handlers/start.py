@@ -30,6 +30,7 @@ from app.utils.keyboard import main_menu_keyboard
 from app.utils.formatters import format_customer_profile, format_error_message
 from app.services.erpnext_api import erp_get_customer_by_telegram_id
 from app.states.user_states import PassportState
+from app.services.support import get_support_contact
 
 
 router = Router()
@@ -119,10 +120,14 @@ async def start_message(msg: Message, state: FSMContext):
         # Xatolik yuz berdi
         logger.error(f"Start handler error: {e}")
 
+        # Operator telefon raqamini olish
+        support = await get_support_contact()
+
         await msg.answer(
             "❌ <b>Xatolik yuz berdi</b>\n\n"
             "ERPNext server bilan bog'lanib bo'lmadi. Iltimos, biroz kutib qaytadan urinib ko'ring.\n\n"
-            "Agar muammo davom etsa, administratorga murojaat qiling.",
+            f"Agar muammo davom etsa, {support['name']}'ga murojaat qiling:\n"
+            f"📞 {support['phone']}",
             reply_markup=main_menu_keyboard()
         )
 

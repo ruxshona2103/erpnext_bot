@@ -36,6 +36,7 @@ from app.states.user_states import PassportState
 from app.services.erpnext_api import erp_get_customer_by_passport
 from app.utils.formatters import format_customer_profile, format_error_message
 from app.utils.keyboard import main_menu_keyboard
+from app.services.support import get_support_contact
 
 
 router = Router()
@@ -202,12 +203,15 @@ async def passport_input_handler(msg: Message, state: FSMContext):
 
             logger.warning(f"Passport {passport} authentication failed: {error_message}")
 
+            # Operator telefon raqamini olish (ERPNext'dan yoki cache'dan)
+            support = await get_support_contact()
+
             await msg.answer(
                 f"❌ <b>Xatolik</b>\n\n"
                 f"{error_message}\n\n"
                 "Iltimos, passport ID'ni tekshirib, qaytadan kiriting.\n\n"
-                "<i>Agar muammo davom etsa, administratorga murojaat qiling:</i>\n"
-                "📞 Telefon: +998 XX XXX XX XX",
+                f"<i>Agar muammo davom etsa, {support['name']}'ga murojaat qiling:</i>\n"
+                f"📞 Telefon: {support['phone']}",
                 reply_markup=main_menu_keyboard()
             )
 
@@ -221,11 +225,15 @@ async def passport_input_handler(msg: Message, state: FSMContext):
 
         await loading_msg.delete()
 
+        # Operator telefon raqamini olish
+        support = await get_support_contact()
+
         await msg.answer(
             "❌ <b>Tizim xatosi!</b>\n\n"
             "ERPNext server bilan bog'lanib bo'lmadi.\n\n"
             "Iltimos, biroz kutib qaytadan urinib ko'ring.\n\n"
-            "Agar muammo davom etsa, administratorga xabar bering.",
+            f"Agar muammo davom etsa, {support['name']}'ga xabar bering:\n"
+            f"📞 {support['phone']}",
             reply_markup=main_menu_keyboard()
         )
 

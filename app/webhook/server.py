@@ -113,8 +113,7 @@ async def payment_entry_webhook(request: Request):
             f"💰 <b>To'lov qabul qilindi!</b>\n\n"
             f"📄 Shartnoma: <code>{contract}</code>\n"
             f"💵 Summa: <b>${amount_formatted}</b>\n"
-            f"🏦 Usul: {payment_method}\n"
-            f"🧾 To'lov ID: <code>{pe_name}</code>\n"
+            f"🧾 ID: <code>{pe_name}</code>\n"
         )
 
         if posting_date:

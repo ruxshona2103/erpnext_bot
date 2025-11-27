@@ -823,3 +823,45 @@ async def health_check() -> bool:
     except Exception as e:
         logger.error(f"ERPNext health check failed: {e}")
         return False
+
+
+# ============================================================================
+# 👤 SUPPORT CONTACTS API
+# ============================================================================
+
+async def erp_get_support_contacts() -> Dict[str, Any]:
+    """
+    ERPNext'dan operator/administrator telefon raqamini olish.
+
+    Bu funksiya xato xabarlarida operator telefon raqamini ko'rsatish uchun
+    ishlatiladi. ERPNext User doctype'dan "Operator" yoki "Administrator"
+    role'iga ega foydalanuvchilarning telefon raqamlarini oladi.
+
+    ERPNext Requirements:
+    ---------------------
+    User doctype'da quyidagi fieldlar to'ldirilishi kerak:
+    - Full Name: Operator ismi
+    - Phone: Telefon raqami (+998 XX XXX XX XX)
+    - Roles: "Operator" yoki "Administrator" role
+
+    Returns:
+        {
+            "success": True,
+            "contact": {
+                "name": "Operator Ismi",
+                "phone": "+998 90 123 45 67",
+                "email": "operator@example.com",
+                "role": "Operator"
+            }
+        }
+
+    Example:
+        >>> data = await erp_get_support_contacts()
+        >>> if data.get("success"):
+        >>>     phone = data["contact"]["phone"]
+        >>>     print(f"Support: {phone}")
+    """
+    return await erp_request(
+        method="GET",
+        endpoint="/api/method/cash_flow_app.cash_flow_management.api.telegram_bot_api.get_support_contacts"
+    )

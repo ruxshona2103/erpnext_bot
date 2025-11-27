@@ -1,4 +1,5 @@
 from typing import Dict, List, Any, Optional
+from app.services.support import get_support_contact_sync
 
 
 # ============================================================================
@@ -221,9 +222,13 @@ def format_customer_profile(data: Dict[str, Any]) -> str:
         logger.error(f"format_customer_profile xatosi: {e}")
         logger.exception("Full traceback:")
 
+        # Operator telefon raqamini olish (sinxron)
+        support = get_support_contact_sync()
+
         return (
             "❌ <b>Ma'lumotlarni ko'rsatishda xatolik</b>\n\n"
-            "Iltimos, qaytadan urinib ko'ring yoki administratorga murojaat qiling."
+            f"Iltimos, qaytadan urinib ko'ring yoki {support['name']}'ga murojaat qiling:\n"
+            f"📞 {support['phone']}"
         )
 
 
@@ -539,9 +544,13 @@ def format_payment_history_with_products(data: Dict[str, Any]) -> str:
         logger.error(f"format_payment_history_with_products xatosi: {e}")
         logger.exception("Full traceback:")
 
+        # Operator telefon raqamini olish (sinxron)
+        support = get_support_contact_sync()
+
         return (
             "❌ <b>Ma'lumotlarni ko'rsatishda xatolik</b>\n\n"
-            "Iltimos, qaytadan urinib ko'ring yoki administratorga murojaat qiling."
+            f"Iltimos, qaytadan urinib ko'ring yoki {support['name']}'ga murojaat qiling:\n"
+            f"📞 {support['phone']}"
         )
 
 
@@ -777,11 +786,6 @@ def format_detailed_payment_history(
         text += f"✅ <b>To'langan:</b> ${format_money(paid_amount)}\n"
         text += f"📉 <b>Qoldiq:</b> ${format_money(remaining)}\n"
 
-        # To'lov foizi
-        if total_amount > 0:
-            percentage = (paid_amount / total_amount) * 100
-            text += f"📊 <b>To'lov foizi:</b> {percentage:.1f}%\n"
-
         # ============================================
         # MAHSULOTLAR
         # ============================================
@@ -904,7 +908,11 @@ def format_detailed_payment_history(
         logger.error(f"format_detailed_payment_history xatosi: {e}")
         logger.exception("Full traceback:")
 
+        # Operator telefon raqamini olish (sinxron)
+        support = get_support_contact_sync()
+
         return (
             "❌ <b>Ma'lumotlarni ko'rsatishda xatolik</b>\n\n"
-            "Iltimos, qaytadan urinib ko'ring yoki administratorga murojaat qiling."
+            f"Iltimos, qaytadan urinib ko'ring yoki {support['name']}'ga murojaat qiling:\n"
+            f"📞 {support['phone']}"
         )

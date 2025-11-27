@@ -22,6 +22,12 @@ class ServerConfig(BaseModel):
     port: int = Field(8000, alias="PORT")
 
 
+class SupportConfig(BaseModel):
+    """Support contact information for error messages."""
+    phone: str = Field("+998 99 123 45 67", alias="SUPPORT_PHONE")
+    operator_name: str = Field("Operator", alias="SUPPORT_NAME")
+
+
 class RedisConfig(BaseModel):
     """Redis configuration for persistent FSM storage."""
     host: str = Field("localhost", alias="REDIS_HOST")
@@ -34,6 +40,7 @@ class Settings(BaseModel):
     erp: ERPNextConfig
     server: ServerConfig
     redis: RedisConfig
+    support: SupportConfig
 
 
 def load_config() -> Settings:
@@ -64,7 +71,12 @@ def load_config() -> Settings:
             REDIS_DB=int(os.getenv("REDIS_DB", 0)),
         )
 
-        return Settings(telegram=telegram, erp=erp, server=server, redis=redis)
+        support = SupportConfig(
+            SUPPORT_PHONE=os.getenv("SUPPORT_PHONE", "+998 99 123 45 67"),
+            SUPPORT_NAME=os.getenv("SUPPORT_NAME", "Operator"),
+        )
+
+        return Settings(telegram=telegram, erp=erp, server=server, redis=redis, support=support)
 
     except ValidationError as e:
         print("❌ Config validation error:", e)

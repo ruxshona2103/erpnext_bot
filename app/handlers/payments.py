@@ -14,6 +14,7 @@ from app.utils.formatters import (
     format_payment_history_with_products,
     format_detailed_payment_history,
 )
+from app.services.support import get_support_contact
 
 router = Router()
 
@@ -186,10 +187,15 @@ async def show_payment_history(callback: CallbackQuery, state: FSMContext):
         logger.error(f"show_payment_history error for {contract_id}: {e}")
         logger.exception("Full traceback:")
 
+        # Operator telefon raqamini olish
+        support = await get_support_contact()
+
         await callback.message.answer(
             "❌ <b>Xatolik yuz berdi</b>\n\n"
             "Ma'lumotlarni yuklashda muammo bo'ldi. "
-            "Iltimos, qaytadan urinib ko'ring.",
+            "Iltimos, qaytadan urinib ko'ring.\n\n"
+            f"Agar muammo davom etsa, {support['name']}'ga murojaat qiling:\n"
+            f"📞 {support['phone']}",
             reply_markup=main_menu_keyboard(),
             parse_mode="HTML"
         )
