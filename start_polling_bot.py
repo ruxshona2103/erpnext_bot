@@ -1,57 +1,60 @@
 #!/usr/bin/env python3
 """
-POLLING MODE - Simple and Reliable!
-No webhook, DNS, SSL needed!
+ERPNext Bot - Polling Mode
+===========================
+
+Simple polling mode deployment - no webhook, DNS, SSL needed!
 """
 import asyncio
 import sys
+from pathlib import Path
+
+# Add project root to path
+sys.path.insert(0, str(Path(__file__).parent))
+
 from loguru import logger
-
-sys.dont_write_bytecode = True
-
-from app.loader import bot, dp, on_startup, on_shutdown
+from app.config import config
+from app.loader import bot, dp
+from app.services.notification import notification_worker
 
 
 async def main():
-    """Start bot in polling mode"""
+    """
+    Start bot in polling mode with background notification worker.
+    """
+    logger.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    logger.info("🚀 ERPNext Bot - Polling Mode")
+    logger.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    logger.info(f"📋 Bot Token: {config.bot.token[:20]}...")
+    logger.info(f"🔗 ERP URL: {config.erp.base_url}")
+    logger.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+
+    # Delete webhook (polling mode doesn't use it)
+    await bot.delete_webhook(drop_pending_updates=True)
+    logger.info("✅ Webhook deleted (polling mode)")
+
+    # Start background notification worker
+    asyncio.create_task(notification_worker())
+    logger.info("✅ Background notification worker started")
+
+    # Start polling
+    logger.info("🔄 Starting polling...")
+    logger.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+
     try:
-        logger.info("🤖 Starting bot in POLLING mode...")
-        logger.info("✅ No webhook/DNS/SSL needed!")
-
-        # Startup
-        await on_startup()
-
-        # Delete any existing webhook
-        webhook_info = await bot.get_webhook_info()
-        if webhook_info.url:
-            logger.warning(f"⚠️ Removing old webhook: {webhook_info.url}")
-            await bot.delete_webhook(drop_pending_updates=True)
-            logger.success("✅ Webhook removed")
-
-        logger.success("✅ Bot started successfully!")
-        logger.info("📡 Polling for updates...")
-        logger.info("💬 Send /start to your bot on Telegram")
-
-        # Start polling
-        await dp.start_polling(
-            bot,
-            allowed_updates=dp.resolve_used_update_types(),
-            drop_pending_updates=True
-        )
-
+        await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
     except KeyboardInterrupt:
-        logger.warning("⚠️ Stopping bot (Ctrl+C)...")
+        logger.info("⏹ Bot stopped by user (Ctrl+C)")
     except Exception as e:
-        logger.error(f"❌ Error: {e}")
-        logger.exception("Full error:")
+        logger.error(f"❌ Bot error: {e}")
+        logger.exception("Full traceback:")
     finally:
-        await on_shutdown()
         await bot.session.close()
-        logger.success("👋 Bot stopped")
+        logger.info("👋 Bot session closed")
 
 
 if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        logger.info("👋 Goodbye!")
+        logger.info("⏹ Bot stopped")
