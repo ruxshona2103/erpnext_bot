@@ -1,0 +1,68 @@
+# ============================================================================
+# .env FAYL - TO'LDIRILGAN NAMUNA
+# Bu faylni serverda .env ga ko'chiring
+# ============================================================================
+
+# =============================================================================
+# TELEGRAM BOT CONFIGURATION
+# =============================================================================
+
+# Telegram Bot Token (@BotFather dan olgan tokeningiz)
+BOT_TOKEN=8448405800:AAHmMWsabLpPz3IUl9zRrM3EBGM51MPWixg
+
+# Bot nomi (ixtiyoriy)
+BOT_NAME=ERPNextBot
+
+# =============================================================================
+# WEBHOOK CONFIGURATION (PRODUCTION)
+# =============================================================================
+
+# MUHIM: Sizning domen (ngrok emas!)
+WEBHOOK_URL=https://bot.macone.net
+
+# Webhook path
+WEBHOOK_PATH=/webhook
+
+# =============================================================================
+# ERPNEXT API CONFIGURATION
+# =============================================================================
+
+# ERPNext server URL
+ERP_BASE_URL=https://macone.net
+
+# ERPNext API credentials
+ERP_API_KEY=f2890075f98bf32
+ERP_API_SECRET=5fcac2777ff2054
+
+# =============================================================================
+# REDIS CONFIGURATION
+# =============================================================================
+
+# Redis host (agar Redis o'rnatilmagan bo'lsa ham ishlaydi)
+REDIS_HOST=localhost
+
+# Redis port
+REDIS_PORT=6379
+
+# Redis database
+REDIS_DB=0
+
+# =============================================================================
+# SERVER CONFIGURATION
+# =============================================================================
+
+# FastAPI server host (0.0.0.0 - barcha interfeyslarda tinglaydi)
+HOST=0.0.0.0
+
+# FastAPI server port (Nginx shu portga proxy qiladi)
+PORT=8001
+
+# =============================================================================
+# SUPPORT CONFIGURATION
+# =============================================================================
+
+# Support telefon raqami
+SUPPORT_PHONE=+998 99 123 45 67
+
+# Support operator ismi
+SUPPORT_NAME=Operator
