@@ -899,6 +899,11 @@ def format_detailed_payment_history(
             total_months_final = len(final_schedule)
             text += f"📅 Muddat: {total_months_final} oylik ({paid_months_count} oy to'langan)\n"
 
+        # ✅ YANGI: Shartnoma yakunlanganligini ko'rsatish
+        if remaining <= 0 and paid_amount >= total_amount:
+            text += f"\n🎉 <b>SHARTNOMA YAKUNLANDI!</b> ✅\n"
+            text += f"<i>Barcha to'lovlar to'liq amalga oshirildi.</i>\n"
+
         text += "\n━━━━━━━━━━━━━━━━━━━━"
 
         return text
