@@ -1,4 +1,4 @@
-#!/bin/bash
+!/bin/bash
 
 # ============================================================================
 # BOT STATUS CHECKER - Professional Monitoring

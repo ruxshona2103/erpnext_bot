@@ -106,6 +106,11 @@ async def contract_menu(msg: Message, state: FSMContext):
             percentage = (paid / total_amount) * 100
             message += f"📊 To'lov foizi: <b>{percentage:.1f}%</b>\n"
 
+        # ✅ YANGI: Shartnoma yakunlanganligini ko'rsatish
+        if remaining <= 0 and paid >= total_amount:
+            message += f"\n🎉 <b>SHARTNOMA YAKUNLANDI!</b> ✅\n"
+            message += f"<i>Barcha to'lovlar amalga oshirildi.</i>\n"
+
         # ✅ MAHSULOTLAR
         if products:
             message += f"\n━━━━━━━━━━━━━━━━━━━━\n"
