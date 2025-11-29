@@ -101,11 +101,6 @@ async def contract_menu(msg: Message, state: FSMContext):
         message += f"✅ To'langan: <b>${format_money(paid)}</b>\n"
         message += f"📉 Qoldiq: <b>${format_money(remaining)}</b>\n"
 
-        # To'lov foizi
-        if total_amount > 0:
-            percentage = (paid / total_amount) * 100
-            message += f"📊 To'lov foizi: <b>{percentage:.1f}%</b>\n"
-
         # ✅ YANGI: Shartnoma yakunlanganligini ko'rsatish
         if remaining <= 0 and paid >= total_amount:
             message += f"\n🎉 <b>SHARTNOMA YAKUNLANDI!</b> ✅\n"
