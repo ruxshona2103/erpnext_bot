@@ -1,24 +1,3 @@
-"""
-Bot Loader - Initialization module
-
-Bu modul bot'ning asosiy komponentlarini yaratadi:
-- Bot instance
-- Dispatcher with RedisStorage
-- Event handlers
-
-Nima uchun RedisStorage?
-------------------------
-- Persistent storage: Server restart bo'lganda ma'lumotlar saqlanadi
-- User state management: Conversation flow saqlanadi
-- Production ready: Real bot'lar uchun mo'ljallangan
-
-Architecture:
--------------
-- Bot: Telegram API bilan ishlash
-- Dispatcher: Message routing va handler management
-- RedisStorage: FSM state va ma'lumotlarni saqlash
-"""
-
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.fsm.storage.redis import RedisStorage
