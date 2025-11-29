@@ -8,14 +8,12 @@ from .reminders_handler import register_reminders_handlers
 
 
 def register_all_handlers(dp: Dispatcher):
-    """
-    Register all bot handlers here.
-    Keeps the loader clean and modular.
-    """
-
+    # 1. Tugmalar (Aniq buyruqlar) - BULAR BIRINCHI TURISHI SHART
     register_start_handlers(dp)
-    register_passport_handlers(dp)
-    register_menu_handlers(dp)
+    register_menu_handlers(dp)      # <-- Menyular
     register_contract_handlers(dp)
     register_payment_handlers(dp)
-    register_reminders_handlers(dp)  # ✅ YANGI: Eslatmalar handler
+    register_reminders_handlers(dp)
+
+    # 2. Passport tekshiruvi (Umumiy buyruq) - BU ENG OXIRIDA TURISHI SHART
+    register_passport_handlers(dp)
