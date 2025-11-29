@@ -1,60 +1,69 @@
-#!/usr/bin/env python3
-"""
-ERPNext Bot - Polling Mode
-===========================
-
-Simple polling mode deployment - no webhook, DNS, SSL needed!
-"""
 import asyncio
 import sys
+import logging
 from pathlib import Path
 
-# Add project root to path
+# 1. Loyiha papkasini yo'lga qo'shish
 sys.path.insert(0, str(Path(__file__).parent))
 
-from loguru import logger
-from app.config import config
 from app.loader import bot, dp
-from app.services.notification import notification_worker
+from app.handlers import register_all_handlers
+
+# ----------------------------------------------------
+
+# Loglarni sozlash
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
+)
+logger = logging.getLogger(__name__)
+
+
+async def on_startup():
+    """Bot ishga tushganda bajariladigan ishlar"""
+    logger.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    logger.info("🚀 Bot Polling Rejimida ishga tushmoqda")
+    logger.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+
+    # 1. HANDLERLARNI RO'YXATDAN O'TKAZISH
+    # Sizdagi register_all_handlers funksiyasi hamma "start", "menu"larni ulaydi
+    try:
+        register_all_handlers(dp)
+        logger.info("✅ Barcha Handlerlar (register_all_handlers) muvaffaqiyatli ulandi!")
+    except Exception as e:
+        logger.error(f"❌ Handlerlarni ulashda xatolik: {e}")
+        # Dasturni to'xtatamiz, chunki handlersiz bot ishlolmaydi
+        sys.exit(1)
+
+    # 2. Webhookni majburan o'chiramiz
+    await bot.delete_webhook(drop_pending_updates=True)
+    logger.info("✅ Webhook o'chirildi")
+    #
+    # # 3. Notification (Eslatmalar) tizimini yoqamiz
+    # asyncio.create_task(notification_worker())
+    # logger.info("✅ Notification worker ishga tushdi")
 
 
 async def main():
-    """
-    Start bot in polling mode with background notification worker.
-    """
-    logger.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-    logger.info("🚀 ERPNext Bot - Polling Mode")
-    logger.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-    logger.info(f"📋 Bot Token: {config.bot.token[:20]}...")
-    logger.info(f"🔗 ERP URL: {config.erp.base_url}")
-    logger.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    # Startup funksiyasini chaqiramiz
+    await on_startup()
 
-    # Delete webhook (polling mode doesn't use it)
-    await bot.delete_webhook(drop_pending_updates=True)
-    logger.info("✅ Webhook deleted (polling mode)")
-
-    # Start background notification worker
-    asyncio.create_task(notification_worker())
-    logger.info("✅ Background notification worker started")
-
-    # Start polling
-    logger.info("🔄 Starting polling...")
-    logger.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-
+    logger.info("🔄 Bot xabarlarni kutmoqda... (To'xtatish uchun Ctrl+C)")
     try:
-        await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
-    except KeyboardInterrupt:
-        logger.info("⏹ Bot stopped by user (Ctrl+C)")
+        # Pollingni boshlaymiz
+        await dp.start_polling(bot)
     except Exception as e:
-        logger.error(f"❌ Bot error: {e}")
-        logger.exception("Full traceback:")
+        logger.error(f"❌ Kutilmagan xatolik: {e}")
     finally:
         await bot.session.close()
-        logger.info("👋 Bot session closed")
+        logger.info("👋 Bot sessiyasi yopildi")
 
 
 if __name__ == "__main__":
     try:
+        if sys.platform == 'win32':
+            asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
         asyncio.run(main())
     except KeyboardInterrupt:
-        logger.info("⏹ Bot stopped")
+        logger.info("🛑 Bot foydalanuvchi tomonidan to'xtatildi")
