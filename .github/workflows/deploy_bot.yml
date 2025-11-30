@@ -11,9 +11,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
       - name: Deploy via SSH
         uses: appleboy/ssh-action@master
         with:
@@ -22,22 +19,46 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
           script: |
-            echo "🚀 Starting Deployment..."
+            # Papka manzili
+            BOT_DIR="/root/erpnext_bot"
+            REPO_URL="https://github.com/${{ github.repository }}"
             
-            # Bot papkasiga o'tish
-            cd /root/erpnext_bot
+            echo "🚀 Deployment Started..."
             
-            # Kodni yangilash
-            echo "🔄 Pulling latest code..."
-            git fetch origin main
-            git reset --hard origin/main
+            # 1. Papka borligini tekshiramiz
+            if [ -d "$BOT_DIR" ]; then
+                echo "✅ Directory exists. Entering..."
+                cd $BOT_DIR
+                
+                # 2. Git repo ekanligini tekshiramiz
+                if [ -d ".git" ]; then
+                    echo "🔄 Updating code..."
+                    git fetch origin main
+                    git reset --hard origin/main
+                else
+                    echo "⚠️ Directory exists but not a git repo. Re-cloning..."
+                    cd ..
+                    rm -rf $BOT_DIR
+                    git clone $REPO_URL $BOT_DIR
+                    cd $BOT_DIR
+                fi
+            else
+                echo "🆕 Directory not found. Cloning fresh..."
+                git clone $REPO_URL $BOT_DIR
+                cd $BOT_DIR
+            fi
             
-            # Ruxsatlarni berish
+            # 3. Deploy skriptini ishga tushiramiz
+            echo "⚡ Executing deploy script..."
+            
+            # Agar .env fayl yo'q bo'lsa, ogohlantirish (lekin sizda bor)
+            if [ ! -f ".env" ]; then
+                echo "⚠️  WARNING: .env file is missing! Bot might fail."
+            fi
+            
             chmod +x deploy_polling.sh
             chmod +x start_polling_bot.py
             
-            # Deploy skriptini ishga tushirish
-            echo "⚡ Running deploy script..."
             ./deploy_polling.sh
             
-            echo "✅ Deployment Successful!"
+            echo "✅ Deployment Finished Successfully!"
