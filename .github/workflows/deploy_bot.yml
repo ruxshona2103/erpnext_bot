@@ -47,5 +47,5 @@ jobs:
             ./deploy_improved.sh
 
             echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            echo "✅ MUVAFFAQIYATLI YAKUNLANDI!"
+            echo "✅ MUVAFFAQIYATLI YAKUNLANDI!!"
             echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
