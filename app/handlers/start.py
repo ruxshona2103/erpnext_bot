@@ -22,7 +22,7 @@ Security:
 
 from aiogram import Router, F
 from aiogram.types import Message
-from aiogram.filters import CommandStart
+from aiogram.filters import CommandStart, Command
 from aiogram.fsm.context import FSMContext
 from loguru import logger
 
@@ -135,6 +135,48 @@ async def start_message(msg: Message, state: FSMContext):
         await state.clear()
 
 
+async def help_message(msg: Message):
+    """
+    /help command handler.
+
+    Bot haqida ma'lumot va barcha mavjud commandlarni ko'rsatadi.
+    """
+    user = msg.from_user
+
+    help_text = (
+        f"👋 <b>Assalomu alaykum, {user.full_name}!</b>\n\n"
+
+        "🤖 <b>Bot haqida:</b>\n"
+        "Ushbu bot orqali siz o'zingizning shartnomalaringiz, to'lovlar tarixi va "
+        "eslatmalar bilan ishlashingiz mumkin.\n\n"
+
+        "📋 <b>Asosiy bo'limlar:</b>\n"
+        "• 📄 <b>Shartnomalar</b> - Barcha shartnomalaringizni ko'rish\n"
+        "• 💳 <b>To'lovlar tarixi</b> - To'lovlaringiz tarixi\n"
+        "• 🔔 <b>Eslatmalar</b> - Eslatmalarni boshqarish\n"
+        "• ⬅️ <b>Orqaga</b> - Asosiy menyuga qaytish\n\n"
+
+        "⌨️ <b>Commandlar:</b>\n"
+        "/start - Botni ishga tushirish yoki qayta boshlash\n"
+        "/help - Yordam va ko'rsatmalar (ushbu xabar)\n\n"
+
+        "🔐 <b>Birinchi marta kirish:</b>\n"
+        "Agar birinchi marta kirayotgan bo'lsangiz, /start commandini "
+        "bosing va passport ID raqamingizni kiriting.\n\n"
+
+        "❓ <b>Yordam kerakmi?</b>\n"
+    )
+
+    # Operator telefon raqamini olish
+    support = await get_support_contact()
+    help_text += (
+        f"{support['name']}'ga murojaat qilishingiz mumkin:\n"
+        f"📞 {support['phone']}"
+    )
+
+    await msg.answer(help_text, reply_markup=main_menu_keyboard())
+
+
 def register_start_handlers(dp):
     """
     Start handler'ni dispatcher'ga ulash.
@@ -144,3 +186,4 @@ def register_start_handlers(dp):
     """
     dp.include_router(router)
     router.message.register(start_message, CommandStart())
+    router.message.register(help_message, Command("help"))
