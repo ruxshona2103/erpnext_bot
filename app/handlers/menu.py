@@ -72,17 +72,32 @@ async def menu_profile(msg: Message):
 
 
 # ============================================================
-# 3) ROUTER REGISTRATSIYA
+# 3) YORDAM TUGMASI
+# ============================================================
+async def menu_help(msg: Message):
+    """
+    ❓ Yordam tugmasi - /help commandiga o'tkazadi
+
+    Bu handler "❓ Yordam" tugmasi bosilganda /help commandini chaqiradi.
+    """
+    # /help commandini chaqirish uchun start modulidagi help_message funksiyasini ishlatamiz
+    from app.handlers.start import help_message
+    await help_message(msg)
+
+
+# ============================================================
+# 4) ROUTER REGISTRATSIYA
 # ============================================================
 def register_menu_handlers(dp):
     """
     Menu handler'larni register qilish.
 
-    DIQQAT: Faqat "Orqaga" va "Profil" handler'lari.
+    DIQQAT: Faqat "Orqaga", "Profil" va "Yordam" handler'lari.
     Shartnomalar, To'lovlar, Eslatmalar - boshqa fayllarda.
     """
     dp.include_router(router)
 
     router.message.register(menu_entry, F.text == "⬅️ Orqaga")
+    router.message.register(menu_help, F.text == "❓ Yordam")
     # PROFIL handler'i hozircha yoqilmagan - keyboard'da yo'q
     # router.message.register(menu_profile, F.text == "👤 Mening profilim")
