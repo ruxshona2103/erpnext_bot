@@ -18,7 +18,14 @@ jobs:
           username: root
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
+          # ---------------------------------------------------
+          # O'ZGARISH SHU YERDA: envs ga TERM qo'shish yoki script ichida export qilish
+          # Eng osoni script ichida export qilish:
+          # ---------------------------------------------------
           script: |
+            # 1. Terminal turini belgilash (Robot ekanligini bildirmaslik uchun)
+            export TERM=xterm
+
             # Agar biron buyruq xato ketsa, jarayonni to'xtatish
             set -e
 
@@ -29,20 +36,20 @@ jobs:
             echo "🚀 SERVERGA ULANILDI. DEPLOY BOSHLANDI."
             echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-            # 1. Papkaga kirish
+            # 2. Papkaga kirish
             cd $PROJECT_DIR
 
-            # 2. Kodni majburan yangilash (GitHub dagi kodni asosiy qilib olish)
+            # 3. Kodni majburan yangilash
             echo "🔄 Git yangilanmoqda..."
             git fetch origin main
             git reset --hard origin/main
             
             echo "✅ Kod muvaffaqiyatli yangilandi: $(git rev-parse --short HEAD)"
 
-            # 3. Skriptga ishga tushirish ruxsatini berish
+            # 4. Ruxsat berish
             chmod +x deploy_improved.sh
 
-            # 4. SIZNING ISHLAYDIGAN SKRIPTINGIZNI YURGIZISH
+            # 5. SKRIPTNI YURGIZISH
             echo "⚡ deploy_improved.sh ishga tushirilmoqda..."
             ./deploy_improved.sh
 
