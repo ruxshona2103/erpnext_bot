@@ -140,6 +140,7 @@ async def help_message(msg: Message):
     /help command handler.
 
     Bot haqida ma'lumot va barcha mavjud commandlarni ko'rsatadi.
+    Operator telefon raqamini ham ko'rsatadi.
     """
     user = msg.from_user
 
@@ -163,15 +164,18 @@ async def help_message(msg: Message):
         "🔐 <b>Birinchi marta kirish:</b>\n"
         "Agar birinchi marta kirayotgan bo'lsangiz, /start commandini "
         "bosing va passport ID raqamingizni kiriting.\n\n"
-
-        "❓ <b>Yordam kerakmi?</b>\n"
     )
 
     # Operator telefon raqamini olish
     support = await get_support_contact()
+
     help_text += (
-        f"{support['name']}'ga murojaat qilishingiz mumkin:\n"
-        f"📞 {support['phone']}"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+        "📞 <b>Operator bilan bog'lanish:</b>\n\n"
+        f"👤 <b>Operator:</b> {support['name']}\n"
+        f"📱 <b>Telefon:</b> <code>{support['phone']}</code>\n\n"
+        "Agar biror savol yoki muammo bo'lsa, yuqoridagi raqamga qo'ng'iroq qiling.\n\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     )
 
     await msg.answer(help_text, reply_markup=main_menu_keyboard())
