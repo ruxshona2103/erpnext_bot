@@ -1,17 +1,18 @@
-name: Deploy Telegram Bot
+name: Deploy Telegram Bot (Polling Mode)
 
+# Qachon ishga tushsin?
 on:
   push:
     branches: [ main ]
-  workflow_dispatch:
+  workflow_dispatch:  # Qo'lda ishga tushirish tugmasi uchun
 
 jobs:
   deploy:
-    name: Deploy to Server
+    name: Deploy to VPS
     runs-on: ubuntu-latest
 
     steps:
-      - name: Deploy via SSH
+      - name: Connect and Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_IP }}
@@ -19,94 +20,102 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
           script: |
-            set -e  # Exit on any error
+            # Xatolik bo'lsa darhol to'xtash
+            set -e
 
-            # Papka manzili
+            # --- SOZLAMALAR ---
             BOT_DIR="/root/erpnext_bot"
             REPO_URL="https://github.com/${{ github.repository }}"
 
             echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            echo "🚀 CI/CD Deployment Started"
+            echo "🚀 CI/CD DEPLOYMENT BOSHLANDI"
             echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            echo ""
 
-            # 1. Papka borligini tekshiramiz
+            # 1. PAPKA VA GIT TEKSHIRUVI
             if [ -d "$BOT_DIR" ]; then
-                echo "✅ Directory exists: $BOT_DIR"
+                echo "📂 Papka mavjud. Kirilmoqda..."
                 cd $BOT_DIR
 
-                # 2. Git repo ekanligini tekshiramiz
                 if [ -d ".git" ]; then
-                    echo "🔄 Updating code from GitHub..."
-
-                    # Show current status
-                    echo "Current commit: $(git rev-parse --short HEAD)"
-
-                    # Fetch and update
+                    echo "🔄 Git yangilanmoqda (Force Sync)..."
+                    # Eski o'zgarishlarni bekor qilib, GitHub bilan 1:1 qilamiz
                     git fetch origin main
                     git reset --hard origin/main
-
-                    echo "Updated to: $(git rev-parse --short HEAD)"
-                    echo "Latest commit: $(git log -1 --format='%s')"
+                    echo "✅ Kod yangilandi: $(git rev-parse --short HEAD)"
                 else
-                    echo "⚠️  Directory exists but not a git repo. Re-cloning..."
+                    echo "⚠️ Git papkasi emas. Qayta klonlanmoqda..."
                     cd ..
                     rm -rf $BOT_DIR
                     git clone $REPO_URL $BOT_DIR
                     cd $BOT_DIR
                 fi
             else
-                echo "🆕 Directory not found. Cloning fresh..."
+                echo "🆕 Papka yo'q. Yangi klonlanmoqda..."
                 git clone $REPO_URL $BOT_DIR
                 cd $BOT_DIR
             fi
 
-            echo ""
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            echo "⚡ Executing IMPROVED deploy script..."
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            echo ""
-
-            # 3. Check .env file
+            # 2. ENV FAYLNI TEKSHIRISH
             if [ ! -f ".env" ]; then
-                echo "❌ ERROR: .env file is missing!"
+                echo "❌ XATO: .env fayli serverda mavjud emas!"
+                echo "Iltimos, serverga kirib .env faylini yarating."
                 exit 1
             fi
 
-            # 4. Make scripts executable
+            echo ""
+            echo "🧹 TOZALASH ISHLARI (CLEANUP)..."
+
+            # 3. ESKI JARAYONLARNI O'LDIRISH
+            # Deploy scriptga ishonmasdan, o'zimiz majburan o'chiramiz
+            echo "🛑 Eski bot jarayonlari to'xtatilmoqda..."
+            pkill -9 -f "start_polling_bot" || true
+            pkill -9 -f "python.*app.main" || true
+            # Systemd servislari bo'lsa, ularni ham to'xtatamiz
+            systemctl stop erpnext_bot 2>/dev/null || true
+            
+            # 4. KESHNI TOZALASH (ENG MUHIM QISM)
+            # Eski kodlar qolib ketmasligi uchun
+            echo "🗑️ Python kesh (.pyc) tozalanmoqda..."
+            find . -name '*.pyc' -delete
+            find . -type d -name '__pycache__' -exec rm -rf {} +
+            echo "✅ Kesh tozalandi!"
+
+            # 5. RUXSATLARNI BERISH
             chmod +x deploy_improved.sh
             chmod +x deploy_polling.sh
             chmod +x start_polling_bot.py
-            chmod +x check_deployment.sh
 
-            # 5. Run IMPROVED deploy script (not the old one!)
+            echo ""
+            echo "⚡ BOTNI ISHGA TUSHIRISH..."
+
+            # 6. DEPLOY SKRIPTINI YURGIZISH
+            # Bizda improved script bo'lmasa, oddiysini ishlatamiz
             if [ -f "deploy_improved.sh" ]; then
-                echo "✅ Using deploy_improved.sh (recommended)"
+                echo "✅ deploy_improved.sh ishlatilmoqda..."
                 ./deploy_improved.sh
             else
-                echo "⚠️  deploy_improved.sh not found, using deploy_polling.sh"
+                echo "⚠️ deploy_improved.sh topilmadi, deploy_polling.sh ishlatilmoqda..."
                 ./deploy_polling.sh
             fi
 
             echo ""
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            echo "🔍 Verifying deployment..."
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            echo ""
+            echo "🔍 STATUS TEKSHIRUVI..."
+            
+            # Bot ishga tushishini 5 soniya kutamiz
+            sleep 5
 
-            # 6. Verify bot is running
+            # Jarayon ishlayaptimi yo'qmi tekshiramiz
             if ps aux | grep -E "start_polling_bot" | grep -v grep > /dev/null; then
-                echo "✅ Bot process is RUNNING"
+                echo "✅ G'ALABA! Bot muvaffaqiyatli ishga tushdi."
+                echo "📊 Ishlayotgan jarayon:"
                 ps aux | grep "start_polling_bot" | grep -v grep
             else
-                echo "❌ ERROR: Bot process is NOT running!"
-                echo ""
-                echo "Last 20 lines of log:"
-                tail -20 bot_polling.log || echo "No log file found"
+                echo "❌ XATO: Bot ishga tushmadi!"
+                echo "📋 Loglarning oxirgi 20 qatori:"
+                tail -20 bot_polling.log || echo "Log fayl topilmadi."
                 exit 1
             fi
 
-            echo ""
             echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            echo "✅ Deployment Completed Successfully!"
+            echo "✅ DEPLOYMENT TUGADI"
             echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
