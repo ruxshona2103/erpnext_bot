@@ -21,6 +21,7 @@ PASSPORT_REGEX = re.compile(r'^[A-Z]{2}\d{7}$', re.IGNORECASE)
 MENU_COMMANDS = [
     "💳 To'lovlar tarixi",
     "📄 Mening shartnomalarim",
+    "hek=llllloooo",
     "📅 Eslatmalar",
     "📞 Yordam",
     "/start",
