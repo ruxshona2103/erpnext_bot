@@ -491,6 +491,7 @@ def format_payment_history_with_products(data: Dict[str, Any]) -> str:
                 text += f"   📦 Miqdor: {format_quantity(product.get('qty'))} dona\n"
                 text += f"   💵 Narx: ${format_money(product.get('price'))}\n"
                 text += f"   💰 Jami: ${format_money(product.get('total_price'))}\n"
+                text += f"   💰 Jami: ${format_money(product.get('total_price'))}\n"
 
                 if product.get('imei'):
                     text += f"   🔢 IMEI: <code>{product.get('imei')}</code>\n"
