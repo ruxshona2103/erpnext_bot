@@ -101,6 +101,19 @@ async def on_startup():
         logger.warning("⚠️ Using config fallback for support contact")
         # Don't raise - bot should work even if support contact fails
 
+    # ✅ YANGI: Bot commandlarni sozlash
+    try:
+        from aiogram.types import BotCommand
+        commands = [
+            BotCommand(command="start", description="Botni boshlash"),
+            BotCommand(command="help", description="Yordam va ko'rsatmalar"),
+        ]
+        await bot.set_my_commands(commands)
+        logger.success("✅ Bot commands set successfully!")
+    except Exception as e:
+        logger.error(f"❌ Failed to set bot commands: {e}")
+        # Don't raise - bot should work even if commands fail
+
     # Git commit hash'ni olish
     try:
         import subprocess
