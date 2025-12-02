@@ -12,31 +12,44 @@ jobs:
 
     steps:
       - name: Deploy via SSH
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_IP }}
           username: root
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
           script: |
+            set -e  # Exit on any error
+
             # Papka manzili
             BOT_DIR="/root/erpnext_bot"
             REPO_URL="https://github.com/${{ github.repository }}"
-            
-            echo "🚀 Deployment Started..."
-            
+
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "🚀 CI/CD Deployment Started"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo ""
+
             # 1. Papka borligini tekshiramiz
             if [ -d "$BOT_DIR" ]; then
-                echo "✅ Directory exists. Entering..."
+                echo "✅ Directory exists: $BOT_DIR"
                 cd $BOT_DIR
-                
+
                 # 2. Git repo ekanligini tekshiramiz
                 if [ -d ".git" ]; then
-                    echo "🔄 Updating code..."
+                    echo "🔄 Updating code from GitHub..."
+
+                    # Show current status
+                    echo "Current commit: $(git rev-parse --short HEAD)"
+
+                    # Fetch and update
                     git fetch origin main
                     git reset --hard origin/main
+
+                    echo "Updated to: $(git rev-parse --short HEAD)"
+                    echo "Latest commit: $(git log -1 --format='%s')"
                 else
-                    echo "⚠️ Directory exists but not a git repo. Re-cloning..."
+                    echo "⚠️  Directory exists but not a git repo. Re-cloning..."
                     cd ..
                     rm -rf $BOT_DIR
                     git clone $REPO_URL $BOT_DIR
@@ -47,18 +60,53 @@ jobs:
                 git clone $REPO_URL $BOT_DIR
                 cd $BOT_DIR
             fi
-            
-            # 3. Deploy skriptini ishga tushiramiz
-            echo "⚡ Executing deploy script..."
-            
-            # Agar .env fayl yo'q bo'lsa, ogohlantirish (lekin sizda bor)
+
+            echo ""
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "⚡ Executing IMPROVED deploy script..."
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo ""
+
+            # 3. Check .env file
             if [ ! -f ".env" ]; then
-                echo "⚠️  WARNING: .env file is missing! Bot might fail."
+                echo "❌ ERROR: .env file is missing!"
+                exit 1
             fi
-            
+
+            # 4. Make scripts executable
+            chmod +x deploy_improved.sh
             chmod +x deploy_polling.sh
             chmod +x start_polling_bot.py
-            
-            ./deploy_polling.sh
-            
-            echo "✅ Deployment Finished Successfully!"
+            chmod +x check_deployment.sh
+
+            # 5. Run IMPROVED deploy script (not the old one!)
+            if [ -f "deploy_improved.sh" ]; then
+                echo "✅ Using deploy_improved.sh (recommended)"
+                ./deploy_improved.sh
+            else
+                echo "⚠️  deploy_improved.sh not found, using deploy_polling.sh"
+                ./deploy_polling.sh
+            fi
+
+            echo ""
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "🔍 Verifying deployment..."
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo ""
+
+            # 6. Verify bot is running
+            if ps aux | grep -E "start_polling_bot" | grep -v grep > /dev/null; then
+                echo "✅ Bot process is RUNNING"
+                ps aux | grep "start_polling_bot" | grep -v grep
+            else
+                echo "❌ ERROR: Bot process is NOT running!"
+                echo ""
+                echo "Last 20 lines of log:"
+                tail -20 bot_polling.log || echo "No log file found"
+                exit 1
+            fi
+
+            echo ""
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "✅ Deployment Completed Successfully!"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
