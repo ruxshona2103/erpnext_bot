@@ -26,21 +26,6 @@ def main_menu_keyboard():
 
 #CONTRACT LIST (Inline Keyboard)
 def contract_list_keyboard(contracts: list, callback_prefix: str = "contract"):
-    """
-    Contract ro'yxati — foydalanuvchi birini tanlaydi.
-
-    Args:
-        contracts: List of contracts from ERPNext API
-            [{"contract_id": "SAL-ORD-00001"}, ...]
-        callback_prefix: Callback prefix (contract yoki payment)
-            - "contract" → contract details ko'rsatish uchun
-            - "payment" → payment history ko'rsatish uchun
-
-    Returns:
-        InlineKeyboardMarkup with contract buttons
-
-    Aiogram 3.x syntax - inline_keyboard parameter ishlatilgan
-    """
     buttons = []
 
     # Har bir shartnoma uchun button
@@ -65,25 +50,10 @@ def contract_list_keyboard(contracts: list, callback_prefix: str = "contract"):
 
 #CONTRACT DETAIL (Inline Keyboard)
 def contract_detail_keyboard(contract_id: str):
-    """
-    Shartnoma batafsil ko'rsatilgandan keyin action tugmalar.
-
-    Tugmalar:
-    ---------
-    - To'lov jadvali
-    - To'lovlar tarixi
-    - Orqaga (shartnomalar ro'yxatiga)
-
-    Args:
-        contract_id: Shartnoma ID (SAL-ORD-00001)
-
-    Returns:
-        InlineKeyboardMarkup
-    """
     return InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(
-                text="📅 To'lov jadvali",
+                text="📅 To'lov jadvalim",
                 callback_data=f"schedule:{contract_id}"
             )
         ],
