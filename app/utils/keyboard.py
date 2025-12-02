@@ -19,6 +19,7 @@ def main_menu_keyboard():
             [KeyboardButton(text="📄 Mening shartnomalarim")],
             [KeyboardButton(text="💳 To'lovlar tarixi")],
             [KeyboardButton(text="📅 Eslatmalar")],
+            [KeyboardButton(text="❓ Yordam")],
         ]
     )
 
