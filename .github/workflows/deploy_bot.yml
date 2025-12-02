@@ -1,18 +1,17 @@
-name: Deploy Telegram Bot (Polling Mode)
+name: Deploy Telegram Bot
 
-# Qachon ishga tushsin?
 on:
   push:
     branches: [ main ]
-  workflow_dispatch:  # Qo'lda ishga tushirish tugmasi uchun
+  workflow_dispatch:
 
 jobs:
   deploy:
-    name: Deploy to VPS
+    name: Run deploy script on VPS
     runs-on: ubuntu-latest
 
     steps:
-      - name: Connect and Deploy via SSH
+      - name: SSH Connection and Run Script
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_IP }}
@@ -20,102 +19,33 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
           script: |
-            # Xatolik bo'lsa darhol to'xtash
+            # Agar biron buyruq xato ketsa, jarayonni to'xtatish
             set -e
 
-            # --- SOZLAMALAR ---
-            BOT_DIR="/root/erpnext_bot"
-            REPO_URL="https://github.com/${{ github.repository }}"
+            # Loyiha papkasi
+            PROJECT_DIR="/root/erpnext_bot"
 
             echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            echo "🚀 CI/CD DEPLOYMENT BOSHLANDI"
+            echo "🚀 SERVERGA ULANILDI. DEPLOY BOSHLANDI."
             echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-            # 1. PAPKA VA GIT TEKSHIRUVI
-            if [ -d "$BOT_DIR" ]; then
-                echo "📂 Papka mavjud. Kirilmoqda..."
-                cd $BOT_DIR
+            # 1. Papkaga kirish
+            cd $PROJECT_DIR
 
-                if [ -d ".git" ]; then
-                    echo "🔄 Git yangilanmoqda (Force Sync)..."
-                    # Eski o'zgarishlarni bekor qilib, GitHub bilan 1:1 qilamiz
-                    git fetch origin main
-                    git reset --hard origin/main
-                    echo "✅ Kod yangilandi: $(git rev-parse --short HEAD)"
-                else
-                    echo "⚠️ Git papkasi emas. Qayta klonlanmoqda..."
-                    cd ..
-                    rm -rf $BOT_DIR
-                    git clone $REPO_URL $BOT_DIR
-                    cd $BOT_DIR
-                fi
-            else
-                echo "🆕 Papka yo'q. Yangi klonlanmoqda..."
-                git clone $REPO_URL $BOT_DIR
-                cd $BOT_DIR
-            fi
-
-            # 2. ENV FAYLNI TEKSHIRISH
-            if [ ! -f ".env" ]; then
-                echo "❌ XATO: .env fayli serverda mavjud emas!"
-                echo "Iltimos, serverga kirib .env faylini yarating."
-                exit 1
-            fi
-
-            echo ""
-            echo "🧹 TOZALASH ISHLARI (CLEANUP)..."
-
-            # 3. ESKI JARAYONLARNI O'LDIRISH
-            # Deploy scriptga ishonmasdan, o'zimiz majburan o'chiramiz
-            echo "🛑 Eski bot jarayonlari to'xtatilmoqda..."
-            pkill -9 -f "start_polling_bot" || true
-            pkill -9 -f "python.*app.main" || true
-            # Systemd servislari bo'lsa, ularni ham to'xtatamiz
-            systemctl stop erpnext_bot 2>/dev/null || true
+            # 2. Kodni majburan yangilash (GitHub dagi kodni asosiy qilib olish)
+            echo "🔄 Git yangilanmoqda..."
+            git fetch origin main
+            git reset --hard origin/main
             
-            # 4. KESHNI TOZALASH (ENG MUHIM QISM)
-            # Eski kodlar qolib ketmasligi uchun
-            echo "🗑️ Python kesh (.pyc) tozalanmoqda..."
-            find . -name '*.pyc' -delete
-            find . -type d -name '__pycache__' -exec rm -rf {} +
-            echo "✅ Kesh tozalandi!"
+            echo "✅ Kod muvaffaqiyatli yangilandi: $(git rev-parse --short HEAD)"
 
-            # 5. RUXSATLARNI BERISH
+            # 3. Skriptga ishga tushirish ruxsatini berish
             chmod +x deploy_improved.sh
-            chmod +x deploy_polling.sh
-            chmod +x start_polling_bot.py
 
-            echo ""
-            echo "⚡ BOTNI ISHGA TUSHIRISH..."
-
-            # 6. DEPLOY SKRIPTINI YURGIZISH
-            # Bizda improved script bo'lmasa, oddiysini ishlatamiz
-            if [ -f "deploy_improved.sh" ]; then
-                echo "✅ deploy_improved.sh ishlatilmoqda..."
-                ./deploy_improved.sh
-            else
-                echo "⚠️ deploy_improved.sh topilmadi, deploy_polling.sh ishlatilmoqda..."
-                ./deploy_polling.sh
-            fi
-
-            echo ""
-            echo "🔍 STATUS TEKSHIRUVI..."
-            
-            # Bot ishga tushishini 5 soniya kutamiz
-            sleep 5
-
-            # Jarayon ishlayaptimi yo'qmi tekshiramiz
-            if ps aux | grep -E "start_polling_bot" | grep -v grep > /dev/null; then
-                echo "✅ G'ALABA! Bot muvaffaqiyatli ishga tushdi."
-                echo "📊 Ishlayotgan jarayon:"
-                ps aux | grep "start_polling_bot" | grep -v grep
-            else
-                echo "❌ XATO: Bot ishga tushmadi!"
-                echo "📋 Loglarning oxirgi 20 qatori:"
-                tail -20 bot_polling.log || echo "Log fayl topilmadi."
-                exit 1
-            fi
+            # 4. SIZNING ISHLAYDIGAN SKRIPTINGIZNI YURGIZISH
+            echo "⚡ deploy_improved.sh ishga tushirilmoqda..."
+            ./deploy_improved.sh
 
             echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            echo "✅ DEPLOYMENT TUGADI"
+            echo "✅ MUVAFFAQIYATLI YAKUNLANDI!"
             echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
