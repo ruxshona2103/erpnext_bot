@@ -15,7 +15,7 @@ def main_menu_keyboard():
     return ReplyKeyboardMarkup(
         resize_keyboard=True,
         keyboard=[
-            [KeyboardButton(text="🔍 Passport orqali qidirish")],
+            [KeyboardButton(text="👤 Mening profilim")],
             [KeyboardButton(text="📄 Mening shartnomalarim")],
             [KeyboardButton(text="💳 To'lovlar tarixi")],
             [KeyboardButton(text="📅 Eslatmalar")],

@@ -21,34 +21,15 @@ PASSPORT_REGEX = re.compile(r'^[A-Z]{2}\d{7}$', re.IGNORECASE)
 MENU_COMMANDS = [
     "💳 To'lovlar tarixi",
     "📄 Mening shartnomalarim",
-    "hek=llllloooo",
     "📅 Eslatmalar",
-    "📞 Yordam",
+    "❓ Yordam",
+    "👤 Mening profilim",
     "/start",
-    "🔍 Passport orqali qidirish",
     "To'lovlar tarixi",
     "Mening shartnomalarim",
     "Eslatmalar",
     "Yordam"
 ]
-
-# =========================================================================
-# 1. "PASSPORT ORQALI QIDIRISH" TUGMASI UCHUN HANDLER
-# =========================================================================
-@router.message(F.text == "🔍 Passport orqali qidirish")
-async def passport_search_button_handler(msg: Message, state: FSMContext):
-    """
-    "🔍 Passport orqali qidirish" tugmasi bosilganda.
-    """
-    await msg.answer(
-        "🔍 <b>Passport bo'yicha qidirish</b>\n\n"
-        "Passport seriya raqamini kiriting:\n\n"
-        "Masalan: <code>AB1234567</code> yoki <code>AA7654321</code>",
-        reply_markup=main_menu_keyboard()
-    )
-
-    # Passport kutish state'ga o'tish
-    await state.set_state(PassportState.waiting_for_passport)
 
 
 @router.message(
@@ -132,13 +113,24 @@ async def passport_input_handler(msg: Message, state: FSMContext):
             error_message = data.get("message_uz") or data.get("message") or "Mijoz topilmadi"
             support = await get_support_contact()
 
-            await msg.answer(
-                f"❌ <b>Xatolik</b>\n\n"
-                f"{error_message}\n\n"
-                f"Iltimos, passport ID'ni tekshirib, qaytadan kiriting.\n"
-                f"📞 Yordam: {support['phone']}",
-                reply_markup=main_menu_keyboard()
-            )
+            # Telegram ID allaqachon boshqa customer'ga bog'langan xatolik
+            if "telegram" in error_message.lower() and "bog'langan" in error_message.lower():
+                await msg.answer(
+                    f"❌ <b>Xatolik</b>\n\n"
+                    f"{error_message}\n\n"
+                    f"⚠️ Sizning Telegram hisobingiz allaqachon boshqa customer'ga bog'langan.\n"
+                    f"Agar bu xatolik deb hisoblasangiz, operator bilan bog'laning:\n"
+                    f"📞 {support['phone']}",
+                    reply_markup=main_menu_keyboard()
+                )
+            else:
+                await msg.answer(
+                    f"❌ <b>Xatolik</b>\n\n"
+                    f"{error_message}\n\n"
+                    f"Iltimos, passport ID'ni tekshirib, qaytadan kiriting.\n"
+                    f"📞 Yordam: {support['phone']}",
+                    reply_markup=main_menu_keyboard()
+                )
 
     except Exception as e:
         logger.error(f"Passport error: {e}")

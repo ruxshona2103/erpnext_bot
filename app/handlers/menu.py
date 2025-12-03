@@ -99,5 +99,4 @@ def register_menu_handlers(dp):
 
     router.message.register(menu_entry, F.text == "⬅️ Orqaga")
     router.message.register(menu_help, F.text == "❓ Yordam")
-    # PROFIL handler'i hozircha yoqilmagan - keyboard'da yo'q
-    # router.message.register(menu_profile, F.text == "👤 Mening profilim")
+    router.message.register(menu_profile, F.text == "👤 Mening profilim")
