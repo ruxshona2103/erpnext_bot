@@ -111,24 +111,53 @@ async def passport_input_handler(msg: Message, state: FSMContext):
         else:
             # ❌ FAILED
             error_message = data.get("message_uz") or data.get("message") or "Mijoz topilmadi"
+            error_code = data.get("error_code", "")
             support = await get_support_contact()
 
-            # Telegram ID allaqachon boshqa customer'ga bog'langan xatolik
-            if "telegram" in error_message.lower() and "bog'langan" in error_message.lower():
+            # Xatolik turlarini aniqlash
+            if error_code == "TELEGRAM_ALREADY_LINKED_TO_OTHER_CUSTOMER":
+                # Telegram ID allaqachon boshqa customer'ga bog'langan
+                await msg.answer(
+                    f"❌ <b>Xavfsizlik Xatosi</b>\n\n"
+                    f"{error_message}\n\n"
+                    f"ℹ️ <b>Nima qilish kerak?</b>\n"
+                    f"Agar siz bu passportning egasi bo'lsangiz, operator bilan bog'laning "
+                    f"va avvalgi bog'lanishni o'chirish so'rang.\n\n"
+                    f"👤 Operator: <b>{support['name']}</b>\n"
+                    f"📞 Telefon: <code>{support['phone']}</code>",
+                    reply_markup=main_menu_keyboard()
+                )
+            elif error_code == "PASSPORT_ALREADY_LINKED_TO_OTHER_TELEGRAM":
+                # Passport allaqachon boshqa Telegram ID ga bog'langan
+                await msg.answer(
+                    f"❌ <b>Xavfsizlik Xatosi</b>\n\n"
+                    f"{error_message}\n\n"
+                    f"ℹ️ <b>Nima qilish kerak?</b>\n"
+                    f"Agar bu sizning passportingiz bo'lsa, operator bilan bog'laning "
+                    f"va avvalgi bog'lanishni o'chirish so'rang.\n\n"
+                    f"👤 Operator: <b>{support['name']}</b>\n"
+                    f"📞 Telefon: <code>{support['phone']}</code>",
+                    reply_markup=main_menu_keyboard()
+                )
+            elif "telegram" in error_message.lower() and "bog'langan" in error_message.lower():
+                # Umumiy telegram xatolik (eski xatolar uchun fallback)
                 await msg.answer(
                     f"❌ <b>Xatolik</b>\n\n"
                     f"{error_message}\n\n"
-                    f"⚠️ Sizning Telegram hisobingiz allaqachon boshqa customer'ga bog'langan.\n"
-                    f"Agar bu xatolik deb hisoblasangiz, operator bilan bog'laning:\n"
-                    f"📞 {support['phone']}",
+                    f"⚠️ Agar bu xatolik deb hisoblasangiz, operator bilan bog'laning:\n\n"
+                    f"👤 Operator: <b>{support['name']}</b>\n"
+                    f"📞 Telefon: <code>{support['phone']}</code>",
                     reply_markup=main_menu_keyboard()
                 )
             else:
+                # Boshqa xatolar (passport topilmadi va h.k.)
                 await msg.answer(
                     f"❌ <b>Xatolik</b>\n\n"
                     f"{error_message}\n\n"
-                    f"Iltimos, passport ID'ni tekshirib, qaytadan kiriting.\n"
-                    f"📞 Yordam: {support['phone']}",
+                    f"Iltimos, passport ID'ni tekshirib, qaytadan kiriting.\n\n"
+                    f"📞 Yordam kerakmi? Operator bilan bog'laning:\n"
+                    f"👤 <b>{support['name']}</b>\n"
+                    f"📞 <code>{support['phone']}</code>",
                     reply_markup=main_menu_keyboard()
                 )
 
@@ -136,7 +165,13 @@ async def passport_input_handler(msg: Message, state: FSMContext):
         logger.error(f"Passport error: {e}")
         await loading_msg.delete()
         support = await get_support_contact()
-        await msg.answer(f"❌ Tizim xatosi. 📞 {support['phone']}")
+        await msg.answer(
+            f"❌ <b>Tizim xatosi</b>\n\n"
+            f"Kutilmagan xatolik yuz berdi. Iltimos, operator bilan bog'laning:\n\n"
+            f"👤 Operator: <b>{support['name']}</b>\n"
+            f"📞 Telefon: <code>{support['phone']}</code>",
+            reply_markup=main_menu_keyboard()
+        )
         await state.clear()
 
 
